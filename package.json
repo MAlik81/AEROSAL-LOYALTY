@@ -1,0 +1,12 @@
+{
+  "name": "Migastarter",
+  "description": "Migastarter Module",
+  "type": "module",
+  "version": "1.1.1000",
+  "dependencies": {
+    "system": {
+      "type": "SAE",
+      "version": "4.12.0"
+    }
+  }
+}

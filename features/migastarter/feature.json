@@ -1,0 +1,28 @@
+{
+  "name": "Migastarter",
+  "code": "migastarter",
+  "version": "0.0.2",
+  "category": "integration",
+  "model": "Migastarter_Model_Setting",
+  "desktop_uri": "migastarter/application/",
+  "routes": [
+    {
+      "root": true,
+      "state": "migastarter-view",
+      "controller": "MigastarterViewController",
+      "url": "migastarter/mobile_view/index/value_id/:value_id",
+      "template": "l1/view.html",
+      "cache": false
+    }
+  ],
+  "icons": [
+    "icons/migastarter1.png",
+    "icons/migastarter2.png",
+    "icons/migastarter3.png"
+  ],
+  "files": ["js/controllers/migastarter.js", "js/factory/migastarter.js"],
+  "is_ajax": true,
+  "compile": true,
+  "use_account": true,
+  "only_once": true
+}

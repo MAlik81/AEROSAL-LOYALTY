@@ -1,0 +1,30 @@
+
+<ion-view class="migastarter-view" sb-page-background cache-view="false">
+	<ion-nav-title>{{migastarter.page_title}}</ion-nav-title>
+	<ion-content class="migastarter">
+		
+		<div class="list card">
+			<div class="item item-custom item-body">
+				{{migastarter.general_description}}
+			</div>	
+		</div>
+		<!-- list card with ng repeat 'migastarter.locations' -->
+		<div class="list card">
+			<div class="item item-input-inset">
+				<label class="item-input-wrapper">
+					<i class="icon ion-search placeholder-icon"></i>
+					<input type="text" ng-model="searchLocation" placeholder="{{ ::'Search Location' | translate:'Migastarter' }}">
+				</label>
+			</div>
+		</div>
+		<div class="list card">
+			<div class="item item-custom  item-avatar"  ng-repeat="location in migastarter.locations | filter:searchLocation" ng-click="goToLocation(location)">
+				<img src="{{migastarter.pre_image_path}}{{location.image_path}}" ng-if="location.image_path">
+				<img src="{{migastarter.default_image}}" ng-if="!location.image_path">
+				<h2>{{location.name}}</h2>
+			</div>
+		</div>
+				
+	</ion-content>
+	
+</ion-view>
