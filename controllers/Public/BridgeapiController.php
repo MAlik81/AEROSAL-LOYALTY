@@ -902,208 +902,28 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                         }
                         // ====================================================
                         //analyze user prompt if he wants to speak to an operator
-                        $operator_settings          = (new Migachat_Model_OperatorSettings)->find(['value_id' => $value_id]);
-                        $last_asked_for_operator_at = $chat_id_consent->getLastAskedForOperatorAt();
-                        // =====================================================
-// Operator request flow with translation (like GDPR)
-// =====================================================
+                        $operator_settings = (new Migachat_Model_OperatorSettings)->find(['value_id' => $value_id]);
 
-// setup langs (use operator_settings default_language as baseline, fallback to 'it')
-                        $op_default_lang  = strtolower($operator_settings->getDefaultLanguage() ?: 'it');
-                        $op_detected_lang = strtolower($global_lang ?: $op_default_lang);
+                        $operatorResponse = $this->handleOperatorEscalation([
+                            'operator_settings'        => $operator_settings,
+                            'chat_id_consent'          => $chat_id_consent,
+                            'global_lang'              => $global_lang,
+                            'translator'               => function ($raw, $targetLang) use ($chatAPI, $translate_system_prompt) {
+                                $prompt = "Just give the translation no other text and if the language of text is same than don't translate.Tranlate the text in {$targetLang}: " . $raw;
+                                $resp   = $chatAPI->generateResponse($prompt, $translate_system_prompt, 'admin', null);
+                                return ($resp[0] ?? false) ? (string) $resp[1] : $raw;
+                            },
+                            'message'                  => $message,
+                            'value_id'                 => $value_id,
+                            'chat_id'                  => $chat_id,
+                            'secret_key'               => $secret_key,
+                            'organization_id'          => $organization_id,
+                            'last_insert_id'           => $lastInsertId,
+                            'chatlogs_obj'             => $chatlogs_obj,
+                        ]);
 
-// helper inline translation (same style as GDPR)
-                        $__op_translate = function (string $raw, string $targetLang) use ($chatAPI, $translate_system_prompt) {
-                            $prompt = "Just give the translation no other text and if the language of text is same than don't translate.Tranlate the text in {$targetLang}: " . $raw;
-                            $resp   = $chatAPI->generateResponse($prompt, $translate_system_prompt, 'admin', null);
-                            return ($resp[0] ?? false) ? (string) $resp[1] : $raw;
-                        };
-
-// compute timing
-                        $last_asked_for_operator_at = strtotime($last_asked_for_operator_at);
-                        $current_time               = strtotime(date('Y-m-d H:i:s'));
-                        $last_asked_diff            = $current_time - $last_asked_for_operator_at;
-
-                        if ($operator_settings->getIsEnabledBridgeApi()) {
-
-                            // Build last interactions transcript (same as your code)
-                            $oper_five_chat_history = (new Migachat_Model_BridgeAPI())->getHistoryMessages($value_id, $chat_id, 10);
-                            $fivw_conversation      = [];
-                            $fivw_conversation_temp = [];
-                            $rev_five_conversation  = "";
-                            foreach ($oper_five_chat_history as $key => $value) {
-                                if ($value['role'] == 'user') {
-                                    $fivw_conversation[] = [
-                                        'role'      => 'user',
-                                        'content'   => urldecode($value['message_content']),
-                                        'date_time' => $value['created_at'],
-                                    ];
-                                } else {
-                                    $fivw_conversation[] = [
-                                        'role'      => 'assistant',
-                                        'content'   => $value['message_content'],
-                                        'date_time' => $value['created_at'],
-                                    ];
-                                }
-                            }
-                            $fivw_conversation_temp = array_reverse($fivw_conversation);
-                            foreach ($fivw_conversation_temp as $key => $value) {
-                                $rev_five_conversation .= 'TIMESTAMP = ' . $value['date_time'] . '<br>' .
-                                    'ROLE = ' . $value['role'] . '<br>' .
-                                    'TEXT = ' . $value['content'] . '<br>----------------<br>';
-                            }
-
-                            if ($chat_id_consent->getAskedForOperator() != 1 && $last_asked_diff > 3600) {
-
-                                $operatorprompt = $operator_settings->getOperatorSystemPrompt()
-                                    ?: "Analyze this text string that a user wrote on our support chat (user prompt), reply with 1 if it is sufficiently probable tha it means that the user wants to speak to an operator. If it is not clear enough and in all other cases reply with a 0";
-
-                                $operatorprompt = str_replace('@@last_five_history@@', 'last five interactions with user : ' . $rev_five_conversation, $operatorprompt);
-
-                                $operator = $this->checkOperator($operatorprompt, $message, $secret_key, $organization_id);
-
-                                if ($operator) {
-                                    $chat_id_consent
-                                        ->setAskedForOperator(1)
-                                        ->setAskedForOperatorSt(date('Y-m-d H:i:s'))
-                                        ->setAskedForOperatorCount(1)
-                                        ->setCreatedAt(date('Y-m-d H:i:s'))
-                                        ->setLastAskedForOperatorAt(date('Y-m-d H:i:s'))
-                                        ->save();
-
-                                    if ($lastInsertId->getId()) {
-                                        $chatlog_data                       = [];
-                                        $chatlog_data['asked_for_operator'] = 1;
-                                        $chatlog_data['updated_at']         = date("Y-m-d H:i:s");
-                                        $chatlogs_obj->addData($chatlog_data)->save();
-                                    }
-
-                                    // translate AskCallFromOperatorMsg (only if detected != default)
-                                    $AskCallFromOperatorMsg = $operator_settings->getAskCallFromOperatorMsg();
-                                    if ($op_detected_lang && $op_detected_lang !== $op_default_lang) {
-                                        $AskCallFromOperatorMsg = $__op_translate($AskCallFromOperatorMsg, strtoupper($op_detected_lang));
-                                    }
-
-                                    $response            = [];
-                                    $response['success'] = true;
-                                    $response['chat_id'] = $chat_id;
-                                    $response['message'] = $AskCallFromOperatorMsg;
-                                    return $this->_sendJson($response);
-                                }
-
-                            } elseif ($chat_id_consent->getAskedForOperator() == 1) {
-
-                                $asked_for_operator_at = strtotime($chat_id_consent->getAskedForOperatorSt());
-                                $current_time          = strtotime(date('Y-m-d H:i:s'));
-                                $diff                  = $current_time - $asked_for_operator_at;
-
-                                if ($diff < 600) {
-
-                                    // Stage-2 confirmation via keywords (kept as-is)
-                                    $isPositiveResponceForOperator = false;
-                                    foreach ($this->positiveResponses as $positiveWord) {
-                                        if (strpos(strtolower($message), $positiveWord) !== false) {
-                                            $isPositiveResponceForOperator = true;
-                                            break;
-                                        }
-                                    }
-
-                                    if ($isPositiveResponceForOperator) {
-
-                                        // Save operator request, send webhook/email (your existing code)
-                                        $app_id                            = (new Migachat_Model_Setting())->getAppIdByValueId($value_id);
-                                        $operator_reqested                 = [];
-                                        $operator_reqested['app_id']       = $app_id;
-                                        $operator_reqested['value_id']     = $value_id;
-                                        $operator_reqested['bot_type']     = 'bridge_api';
-                                        $operator_reqested['user_id']      = $chat_id;
-                                        $operator_reqested['status']       = 'pending';
-                                        $operator_reqested['request_data'] = $message;
-                                        $operator_reqested['user_email']   = $chat_id_consent->getUserEmail();
-                                        $operator_reqested['user_mobile']  = $chat_id_consent->getUserMobile();
-                                        $operator_reqested['user_name']    = $chat_id_consent->getUserName();
-                                        $operator_reqested['created_at']   = date('Y-m-d H:i:s');
-                                        $operator_reqested['updated_at']   = date('Y-m-d H:i:s');
-                                        $operator_saved                    = (new Migachat_Model_OperatorRequests())->addData($operator_reqested)->save();
-                                        $operator_id                       = $operator_saved->getId();
-
-                                        $this->sendOperatorWebhook($operator_reqested, $chat_id_consent, $operator_id, $operator_settings, $rev_five_conversation);
-                                        $this->sendOperatorEmail($operator_reqested, $chat_id_consent, $operator_id, $operator_settings, $rev_five_conversation);
-
-                                        $chat_id_consent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
-
-                                        // translate ConfirmCallFromOperatorMsg
-                                        $ConfirmCallFromOperatorMsg = $operator_settings->getConfirmCallFromOperatorMsg();
-                                        if ($op_detected_lang && $op_detected_lang !== $op_default_lang) {
-                                            $ConfirmCallFromOperatorMsg = $__op_translate($ConfirmCallFromOperatorMsg, strtoupper($op_detected_lang));
-                                        }
-
-                                        $response            = [];
-                                        $response['success'] = true;
-                                        $response['chat_id'] = $chat_id;
-                                        $response['message'] = $ConfirmCallFromOperatorMsg;
-                                        return $this->_sendJson($response);
-
-                                    } else {
-
-                                        if (in_array(strtolower($message), $this->negativeResponses)) {
-
-                                            $chat_id_consent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
-
-                                            // translate DeclinedCallFromOperatorMsg
-                                            $DeclinedCallFromOperatorMsg = $operator_settings->getDeclinedCallFromOperatorMsg();
-                                            if ($op_detected_lang && $op_detected_lang !== $op_default_lang) {
-                                                $DeclinedCallFromOperatorMsg = $__op_translate($DeclinedCallFromOperatorMsg, strtoupper($op_detected_lang));
-                                            }
-
-                                            $response            = [];
-                                            $response['success'] = true;
-                                            $response['chat_id'] = $chat_id;
-                                            $response['message'] = $DeclinedCallFromOperatorMsg;
-                                            return $this->_sendJson($response);
-
-                                        } else {
-
-                                            if ($chat_id_consent->getAskedForOperatorCount() < 2) {
-
-                                                $chat_id_consent->setAskedForOperator(1)->setAskedForOperatorCount(2)->setCreatedAt(date('Y-m-d H:i:s'))->save();
-
-                                                // translate InvalidAskCallFromOperatorMsg
-                                                $InvalidAskCallFromOperatorMsg = $operator_settings->getInvalidAskCallFromOperatorMsg();
-                                                if ($op_detected_lang && $op_detected_lang !== $op_default_lang) {
-                                                    $InvalidAskCallFromOperatorMsg = $__op_translate($InvalidAskCallFromOperatorMsg, strtoupper($op_detected_lang));
-                                                }
-
-                                                $response            = [];
-                                                $response['success'] = true;
-                                                $response['chat_id'] = $chat_id;
-                                                $response['message'] = $InvalidAskCallFromOperatorMsg;
-                                                return $this->_sendJson($response);
-
-                                            } else {
-
-                                                $chat_id_consent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
-
-                                                // translate DeclinedCallFromOperatorMsg
-                                                $DeclinedCallFromOperatorMsg = $operator_settings->getDeclinedCallFromOperatorMsg();
-                                                if ($op_detected_lang && $op_detected_lang !== $op_default_lang) {
-                                                    $DeclinedCallFromOperatorMsg = $__op_translate($DeclinedCallFromOperatorMsg, strtoupper($op_detected_lang));
-                                                }
-
-                                                $response            = [];
-                                                $response['success'] = true;
-                                                $response['chat_id'] = $chat_id;
-                                                $response['message'] = $DeclinedCallFromOperatorMsg;
-                                                return $this->_sendJson($response);
-                                            }
-                                        }
-                                    }
-
-                                } else {
-                                    // (line after anchor will follow this)
-                                    $chat_id_consent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
-                                }
-                            }
+                        if ($operatorResponse !== null) {
+                            return $this->_sendJson($operatorResponse);
                         }
 
                         // bridge api chat limit overall + chat id
@@ -2269,6 +2089,184 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             'chat_id_entity' => $chatIdEntity,
             'thread_id'      => $threadId,
         ];
+    }
+
+    private function handleOperatorEscalation(array $context)
+    {
+        $operatorSettings = $context['operator_settings'] ?? null;
+        if (! $operatorSettings || ! $operatorSettings->getIsEnabledBridgeApi()) {
+            return null;
+        }
+
+        $chatIdConsent = $context['chat_id_consent'] ?? null;
+        if (! $chatIdConsent) {
+            return null;
+        }
+
+        $valueId        = $context['value_id'] ?? null;
+        $chatId         = $context['chat_id'] ?? null;
+        $message        = (string) ($context['message'] ?? '');
+        $secretKey      = $context['secret_key'] ?? '';
+        $organizationId = $context['organization_id'] ?? '';
+        $lastInsertId   = $context['last_insert_id'] ?? null;
+        $chatlogsObj    = $context['chatlogs_obj'] ?? null;
+        $globalLang     = strtolower((string) ($context['global_lang'] ?? ''));
+        $translator     = $context['translator'] ?? null;
+
+        $opDefaultLang  = strtolower($operatorSettings->getDefaultLanguage() ?: 'it');
+        $opDetectedLang = $globalLang ?: $opDefaultLang;
+
+        $translate = function ($text) use ($translator, $opDetectedLang, $opDefaultLang) {
+            $text = (string) $text;
+
+            if ($opDetectedLang && $opDetectedLang !== $opDefaultLang && is_callable($translator)) {
+                return $translator($text, strtoupper($opDetectedLang));
+            }
+
+            return $text;
+        };
+
+        $now           = time();
+        $lastAskedRaw  = $chatIdConsent->getLastAskedForOperatorAt();
+        $lastAskedDiff = PHP_INT_MAX;
+        if (! empty($lastAskedRaw)) {
+            $lastAskedDiff = $now - strtotime($lastAskedRaw);
+        }
+
+        $historyRecords = (new Migachat_Model_BridgeAPI())->getHistoryMessages($valueId, $chatId, 10);
+        $conversation   = [];
+        foreach ($historyRecords as $record) {
+            $conversation[] = [
+                'role'      => $record['role'] === 'user' ? 'user' : 'assistant',
+                'content'   => $record['role'] === 'user' ? urldecode($record['message_content']) : $record['message_content'],
+                'date_time' => $record['created_at'],
+            ];
+        }
+
+        $conversation        = array_reverse($conversation);
+        $revFiveConversation = '';
+        foreach ($conversation as $entry) {
+            $revFiveConversation .= 'TIMESTAMP = ' . $entry['date_time'] . '<br>' .
+                'ROLE = ' . $entry['role'] . '<br>' .
+                'TEXT = ' . $entry['content'] . '<br>----------------<br>';
+        }
+
+        if ($chatIdConsent->getAskedForOperator() != 1 && $lastAskedDiff > 3600) {
+            $operatorPrompt = $operatorSettings->getOperatorSystemPrompt()
+                ?: "Analyze this text string that a user wrote on our support chat (user prompt), reply with 1 if it is sufficiently probable tha it means that the user wants to speak to an operator. If it is not clear enough and in all other cases reply with a 0";
+
+            $operatorPrompt = str_replace(
+                '@@last_five_history@@',
+                'last five interactions with user : ' . $revFiveConversation,
+                $operatorPrompt
+            );
+
+            $shouldEscalate = $this->checkOperator($operatorPrompt, $message, $secretKey, $organizationId);
+
+            if ($shouldEscalate) {
+                $chatIdConsent
+                    ->setAskedForOperator(1)
+                    ->setAskedForOperatorSt(date('Y-m-d H:i:s'))
+                    ->setAskedForOperatorCount(1)
+                    ->setCreatedAt(date('Y-m-d H:i:s'))
+                    ->setLastAskedForOperatorAt(date('Y-m-d H:i:s'))
+                    ->save();
+
+                if ($lastInsertId && method_exists($lastInsertId, 'getId') && $lastInsertId->getId() && $chatlogsObj) {
+                    $chatlogsObj->addData([
+                        'asked_for_operator' => 1,
+                        'updated_at'         => date('Y-m-d H:i:s'),
+                    ])->save();
+                }
+
+                return [
+                    'success' => true,
+                    'chat_id' => $chatId,
+                    'message' => $translate($operatorSettings->getAskCallFromOperatorMsg()),
+                ];
+            }
+        } elseif ($chatIdConsent->getAskedForOperator() == 1) {
+            $askedStRaw = $chatIdConsent->getAskedForOperatorSt();
+            $diff       = PHP_INT_MAX;
+            if (! empty($askedStRaw)) {
+                $diff = $now - strtotime($askedStRaw);
+            }
+
+            if ($diff < 600) {
+                $lowerMessage  = strtolower($message);
+                $isPositiveHit = false;
+
+                foreach ($this->positiveResponses as $positiveWord) {
+                    if (strpos($lowerMessage, $positiveWord) !== false) {
+                        $isPositiveHit = true;
+                        break;
+                    }
+                }
+
+                if ($isPositiveHit) {
+                    $appId             = (new Migachat_Model_Setting())->getAppIdByValueId($valueId);
+                    $operatorRequested = [
+                        'app_id'       => $appId,
+                        'value_id'     => $valueId,
+                        'bot_type'     => 'bridge_api',
+                        'user_id'      => $chatId,
+                        'status'       => 'pending',
+                        'request_data' => $message,
+                        'user_email'   => $chatIdConsent->getUserEmail(),
+                        'user_mobile'  => $chatIdConsent->getUserMobile(),
+                        'user_name'    => $chatIdConsent->getUserName(),
+                        'created_at'   => date('Y-m-d H:i:s'),
+                        'updated_at'   => date('Y-m-d H:i:s'),
+                    ];
+
+                    $operatorSaved = (new Migachat_Model_OperatorRequests())->addData($operatorRequested)->save();
+                    $operatorId    = $operatorSaved->getId();
+
+                    $this->sendOperatorWebhook($operatorRequested, $chatIdConsent, $operatorId, $operatorSettings, $revFiveConversation);
+                    $this->sendOperatorEmail($operatorRequested, $chatIdConsent, $operatorId, $operatorSettings, $revFiveConversation);
+
+                    $chatIdConsent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
+
+                    return [
+                        'success' => true,
+                        'chat_id' => $chatId,
+                        'message' => $translate($operatorSettings->getConfirmCallFromOperatorMsg()),
+                    ];
+                }
+
+                if (in_array(strtolower($message), $this->negativeResponses)) {
+                    $chatIdConsent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
+
+                    return [
+                        'success' => true,
+                        'chat_id' => $chatId,
+                        'message' => $translate($operatorSettings->getDeclinedCallFromOperatorMsg()),
+                    ];
+                }
+
+                if ($chatIdConsent->getAskedForOperatorCount() < 2) {
+                    $chatIdConsent->setAskedForOperator(1)->setAskedForOperatorCount(2)->setCreatedAt(date('Y-m-d H:i:s'))->save();
+
+                    return [
+                        'success' => true,
+                        'chat_id' => $chatId,
+                        'message' => $translate($operatorSettings->getInvalidAskCallFromOperatorMsg()),
+                    ];
+                }
+
+                $chatIdConsent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
+
+                return [
+                    'success' => true,
+                    'chat_id' => $chatId,
+                    'message' => $translate($operatorSettings->getDeclinedCallFromOperatorMsg()),
+                ];
+            }
+
+            $chatIdConsent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
+        }
+
+        return null;
     }
 
     private function handleChatLimits(array $context)
