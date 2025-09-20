@@ -1841,6 +1841,62 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             $chatApi = new Migachat_Model_ChatGPTAPI($apiUrl, $secretKey, $organizationId, $gptModel);
         }
 
+        $assistantContext = [
+            'use_assistant' => ($chatbotSettings && $chatbotSettings->getUseAssistant() == "1"),
+            'thread_id'     => $threadId,
+        ];
+
+        if ($assistantContext['use_assistant']) {
+            $assistantId = $promptSettings ? $promptSettings->getAssistantId() : null;
+            if (empty($assistantId)) {
+                throw new Exception("Assistant ID is not set in chatbot settings");
+            }
+
+            $assistant = (new Migachat_Model_Assistants())->find(['assistant_id' => $assistantId]);
+            if (! $assistant->getId()) {
+                throw new Exception("Assistant not found with ID: " . $assistantId);
+            }
+
+            $fileIds = $assistant->getOpenaiFileIds();
+            $options = is_string($fileIds) ? json_decode($fileIds, true) : ($fileIds ? $fileIds : false);
+            $opts    = [
+                'truncation_strategy' => [
+                    'type'          => 'last_messages',
+                    'last_messages' => 10,
+                ],
+            ];
+
+            if ($options) {
+                $opts['tool_resources'] = [
+                    'file_search' => [
+                        'vector_store_ids' => is_string($fileIds) ? json_decode($fileIds, true) : ($fileIds ? $fileIds : []),
+                    ],
+                ];
+            }
+
+            $assistantContext['assistant_id']       = $assistantId;
+            $assistantContext['assistant_options']  = $options;
+            $assistantContext['assistant_run_opts'] = $opts;
+
+            $preparedMessage = $originalMsg;
+
+            $context['chat_api']                      = $chatApi;
+            $context['conversation']                  = [];
+            $context['prepared_message']              = $preparedMessage;
+            $context['message']                       = $preparedMessage;
+            $context['assistant_context']             = $assistantContext;
+            $context['max_tokens']                    = $bridgeSettings ? $bridgeSettings->getAiAnswerTokenLimit() : null;
+            $context['user_max_tokens_responce']      = $bridgeSettings ? $bridgeSettings->getAiAnswerTokenLimitMsg() : 'vuoi che continui?';
+            $context['last_message_max_token_exeed']  = false;
+            $context['translate_system_prompt']       = $translateSystemPrompt;
+            $context['chat_history_string']           = $chatHistoryString;
+            $context['two_chat_history_conversation'] = $twoChatHistoryConversation;
+            $context['name']                          = $name;
+            $context['channel']                       = $channel;
+
+            return $context;
+        }
+
         $completePrompt = "You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.";
         if ($promptSettings && $promptSettings->getSystemPrompt()) {
             $completePrompt = $promptSettings->getSystemPrompt() . ' if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.';
@@ -1937,50 +1993,12 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
         $allConversationReversed = array_reverse($allConversation);
 
-        $maxTokens               = $bridgeSettings ? $bridgeSettings->getAiAnswerTokenLimit() : null;
-        $userMaxTokensResponse   = $bridgeSettings ? $bridgeSettings->getAiAnswerTokenLimitMsg() : 'vuoi che continui?';
-        $preparedMessage         = $originalMsg;
+        $maxTokens             = $bridgeSettings ? $bridgeSettings->getAiAnswerTokenLimit() : null;
+        $userMaxTokensResponse = $bridgeSettings ? $bridgeSettings->getAiAnswerTokenLimitMsg() : 'vuoi che continui?';
+        $preparedMessage       = $originalMsg;
 
         if ($this->checkPositiveResponce($userMaxTokensResponse, $originalMsg, $secretKey, $organizationId) && $lastMessageMaxTokenExceeded) {
             $preparedMessage = "continue the responce from where it stoped.";
-        }
-
-        $assistantContext = [
-            'use_assistant' => ($chatbotSettings && $chatbotSettings->getUseAssistant() == "1"),
-            'thread_id'     => $threadId,
-        ];
-
-        if ($assistantContext['use_assistant']) {
-            $assistantId = $promptSettings ? $promptSettings->getAssistantId() : null;
-            if (empty($assistantId)) {
-                throw new Exception("Assistant ID is not set in chatbot settings");
-            }
-
-            $assistant = (new Migachat_Model_Assistants())->find(['assistant_id' => $assistantId]);
-            if (! $assistant->getId()) {
-                throw new Exception("Assistant not found with ID: " . $assistantId);
-            }
-
-            $fileIds = $assistant->getOpenaiFileIds();
-            $options = is_string($fileIds) ? json_decode($fileIds, true) : ($fileIds ? $fileIds : false);
-            $opts    = [
-                'truncation_strategy' => [
-                    'type'          => 'last_messages',
-                    'last_messages' => 10,
-                ],
-            ];
-
-            if ($options) {
-                $opts['tool_resources'] = [
-                    'file_search' => [
-                        'vector_store_ids' => is_string($fileIds) ? json_decode($fileIds, true) : ($fileIds ? $fileIds : []),
-                    ],
-                ];
-            }
-
-            $assistantContext['assistant_id']        = $assistantId;
-            $assistantContext['assistant_options']   = $options;
-            $assistantContext['assistant_run_opts']  = $opts;
         }
 
         $context['chat_api']                      = $chatApi;
