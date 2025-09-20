@@ -609,11 +609,13 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         try {
 
             $ai_awnser_prepend = '';
+
             // Extract incoming request details and bootstrap controller state.
             $requestContext = $this->initializeRequestContext();
             $params         = $requestContext['params'];
             $ws_log_data    = $requestContext['ws_log_data'];
             $chat_id_data   = $requestContext['chat_id_data'];
+
 
             $missingParamsResponse = $this->validateRequiredParams($params, $ws_log_data);
             if ($missingParamsResponse) {
@@ -2236,9 +2238,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         return $responce;
     }
 
-    /**
-     * Prepares request, logging, and chat state containers used throughout the controller.
-     */
+
     private function initializeRequestContext()
     {
         $params = $this->extractRequestParams();
@@ -2326,6 +2326,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             if ($post_params && isset($post_params['instance_id'])) {
                 return $post_params;
             }
+
         }
 
         return $request->getParams();
