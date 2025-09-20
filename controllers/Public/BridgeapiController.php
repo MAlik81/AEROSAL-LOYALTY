@@ -769,170 +769,29 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                             throw new Exception(p__("Migachat", 'Mobile number is blacklisted'), 1);
                         }
                     }
-                    // ================================================
-                    // check if limit is already reached
+                    $chatLimitResult = $this->handleChatLimits([
+                        'value_id'                        => $value_id,
+                        'chat_id'                         => $chat_id,
+                        'chatid_duration'                 => $chatid_duration,
+                        'chatid_tokens'                   => $chatid_tokens,
+                        'bridge_chatid_tokens'            => $bridge_chatid_tokens,
+                        'bridge_obj'                      => $bridge_obj,
+                        'chat_history_string'             => $chat_history_string,
+                        'two_chat_history_conversation'   => $two_chat_history_conversation,
+                        'global_lang'                     => $global_lang,
+                        'translate_system_prompt'         => $translate_system_prompt,
+                        'apiUrl'                          => $apiUrl,
+                        'secret_key'                      => $secret_key,
+                        'organization_id'                 => $organization_id,
+                        'gpt_model'                       => $gpt_model,
+                        'mobile'                          => $mobile,
+                    ]);
 
-                    $chat_id_obj_for_limit  = new Migachat_Model_ModelChatIds();
-                    $chat_id_data_for_limit = $chat_id_obj_for_limit->find(['value_id' => $value_id, 'chat_id' => $chat_id]);
-                    if ($chat_id_data_for_limit->getId()) {
-                        // if set last_token_limit_reached_at is not null than check if the duration is passed or not
-                        if ($chat_id_data_for_limit->getLastTokenLimitReachedAt()) {
-                            $last_token_limit_reached_at = $chat_id_data_for_limit->getLastTokenLimitReachedAt();
-                            $last_token_limit_reached_at = strtotime($last_token_limit_reached_at);
-                            $current_time                = time();
-                            $diff                        = $current_time - $last_token_limit_reached_at;
-                            if ($diff < 3600) {
-                                $chat_id_data_0                   = [];
-                                $chat_id_data_0['requests_count'] = $chat_id_data_for_limit->getRequestsCount() + 1;
-                                $chat_id_data_0['id']             = $chat_id_data_for_limit->getId();
-                                $chat_id_obj_0_for_limit          = (new Migachat_Model_ModelChatIds())->addData($chat_id_data_0)->save();
-                                $total_count                      = $chat_id_obj_0_for_limit->getRequestsCount();
-                                if ($total_count > 3 && false) {
-
-                                    if ($mobile) {
-                                        $setting = new Migachat_Model_Setting();
-                                        $setting->find(1);
-
-                                        $existing_blacklisted_numbers = $this->normalizeNumberList($setting->getBlacklistedNumbers());
-                                        if (! in_array($mobile, $existing_blacklisted_numbers, true)) {
-                                            $existing_blacklisted_numbers[] = $mobile;
-                                            $setting->setBlacklistedNumbers(implode(',', $existing_blacklisted_numbers))->save();
-                                        }
-                                    }
-
-                                    $this->logBridgeApiError(
-                                        [
-                                            'value_id'    => $value_id,
-                                            'customer_id' => $chat_id,
-                                        ],
-                                        p__("Migachat", 'Chat id requests limit reached and after 3 requests in 1 hour, blacklisted permanently!')
-                                    );
-
-                                    $app_id                = (new Migachat_Model_Setting())->getAppIdByValueId($value_id);
-                                    $application           = (new Application_Model_Application())->find($app_id);
-                                    $main_domain           = __get('main_domain');
-                                    $email_data            = [];
-                                    $email_data['subject'] = "Warning CHATID $chat_id API limit reached";
-                                    $email_data['body']    = "In the past $chatid_duration minutes we reached more than $chatid_tokens tokens allowed for a single Chatid <br> The Chat-Id affected is ID:$chat_id <br> APP_ID:$app_id <br> APP_NAME:" . $application->getName() . " <br> MAIN DOMAIN:$main_domain.<br>";
-                                    $email_data['body'] .= "<br> <br> <strong> The Chat-Id is blacklisted permanently! </strong>";
-
-                                    $this->defaultSMTPEmail($email_data, $value_id);
-
-                                    $payload = [
-                                        'success' => true,
-                                        'message' => p__("Migachat", 'Chat id requests limit reached and after 3 more messages in 1 hour, blacklisted permanently!'),
-                                        'chat_id' => $chat_id,
-                                    ];
-                                    return $this->_sendJson($payload);
-                                    exit;
-                                } else {
-                                    $chat_id_data_1                   = [];
-                                    $chat_id_data_1['id']             = $chat_id_data_for_limit->getId();
-                                    $chat_id_data_1['requests_count'] = $chat_id_data_for_limit->getRequestsCount() + 1;
-                                    $chat_id_data_1['updated_at']     = date('Y-m-d H:i:s');
-                                    (new Migachat_Model_ModelChatIds())->addData($chat_id_data_1)->save();
-
-                                    $app_id                = (new Migachat_Model_Setting())->getAppIdByValueId($value_id);
-                                    $application           = (new Application_Model_Application())->find($app_id);
-                                    $main_domain           = __get('main_domain');
-                                    $email_data            = [];
-                                    $email_data['subject'] = "Warning CHATID $chat_id API limit reached";
-                                    $email_data['body']    = "In the past $chatid_duration minutes we reached more than $chatid_tokens tokens allowed for a single Chatid, the Chatid affected is ID:$chat_id , APP_ID:$app_id , APP_NAME:" . $application->getName() . ", MAIN DOMAIN:$main_domain . Please check your system";
-
-                                    $this->defaultSMTPEmail($email_data, $value_id);
-
-                                    // Initialize and use the ChatGPT API
-
-                                    $chatAPI  = new Migachat_Model_ChatGPTAPI($apiUrl, $secret_key, $organization_id, $gpt_model);
-                                    $response = $chatAPI->generateResponse($chat_history_string, $two_chat_history_conversation, 'admin', null);
-
-                                    $user_chat_limit_responce = $bridge_obj->getUserChatLimitResponce();
-                                    $translate_response       = $chatAPI->generateResponse("Just give the translation no other text and if the language of text is same than don't translate.Tranlate the text in $global_lang: " . $user_chat_limit_responce, $translate_system_prompt, 'admin', null);
-                                    $payload                  = [
-                                        'success' => true,
-                                        'message' => $translate_response[1],
-                                        'chat_id' => $chat_id,
-                                    ];
-                                    return $this->_sendJson($payload);
-                                    exit;
-                                }
-                            } else {
-                                $chat_id_data_2                                = [];
-                                $chat_id_data_2['id']                          = $chat_id_data_for_limit->getId();
-                                $chat_id_data_2['requests_count']              = 0;
-                                $chat_id_data_2['last_token_limit_reached_at'] = null;
-                                $chat_id_data_2['updated_at']                  = date('Y-m-d H:i:s');
-                                (new Migachat_Model_ModelChatIds())->addData($chat_id_data_2)->save();
-
-                                $chat_id_limit_obj = new Migachat_Model_BridgrapiChatLimits();
-                                $is_ai_turned_off  = $chat_id_limit_obj->find(['value_id' => $value_id, 'chat_id' => $chat_id_for_limit, 'is_limit' => 0]);
-                                if ($is_ai_turned_off->getId() && ! $is_ai_turned_off->getIsLimit()) {
-                                    $del_resp = $chat_id_limit_obj->delete();
-                                }
-                            }
-                        }
+                    if (! empty($chatLimitResult['payload'])) {
+                        return $this->_sendJson($chatLimitResult['payload']);
                     }
 
-                    // ================================================
-
-                    $chat_id_limit_obj   = new Migachat_Model_BridgrapiChatLimits();
-                    $is_limit_turned_off = $chat_id_limit_obj->find(['value_id' => $value_id, 'chat_id' => $chat_id, 'is_limit' => 1]);
-                    // dd($is_limit_turned_off->getData(),$bridge_chatid_tokens[0]['total_tokens_sum'],$chatid_tokens,$chat_id_data_for_limit->getData());
-                    // check token limit for chat_id here
-                    if ($bridge_chatid_tokens[0]['total_tokens_sum'] > $chatid_tokens && ! $is_limit_turned_off->getId()) {
-                        $this->logBridgeApiError(
-                            [
-                                'value_id'    => $value_id,
-                                'customer_id' => $chat_id,
-                            ],
-                            p__("Migachat", 'Chat id tokens limit reached!')
-                        );
-
-                        $chat_id_data_3                                = [];
-                        $chat_id_data_3['id']                          = $chat_id_data_for_limit->getId();
-                        $chat_id_data_3['requests_count']              = 1;
-                        $chat_id_data_3['last_token_limit_reached_at'] = date('Y-m-d H:i:s');
-                        $chat_id_data_3['updated_at']                  = date('Y-m-d H:i:s');
-                        (new Migachat_Model_ModelChatIds())->addData($chat_id_data_3)->save();
-
-                        $chat_id_limit_obj = new Migachat_Model_BridgrapiChatLimits();
-                        $is_ai_turned_off  = $chat_id_limit_obj->find(['value_id' => $value_id, 'chat_id' => $chat_id, 'is_limit' => 0]);
-                        if (! $is_ai_turned_off->getId()) {
-                            $chat_id_limit_data = [];
-                            $chat_id_limit_data = [
-                                'value_id'   => $value_id,
-                                'chat_id'    => $chat_id,
-                                'is_limit'   => 0,
-                                'ai_off_at'  => date('Y-m-d H:i:s'),
-                                'created_at' => date('Y-m-d H:i:s'),
-                                'updated_at' => date('Y-m-d H:i:s'),
-                            ];
-
-                            (new Migachat_Model_BridgrapiChatLimits())->addData($chat_id_limit_data)->save();
-                        }
-
-                        $app_id                = (new Migachat_Model_Setting())->getAppIdByValueId($value_id);
-                        $application           = (new Application_Model_Application())->find($app_id);
-                        $main_domain           = __get('main_domain');
-                        $email_data            = [];
-                        $email_data['subject'] = "Warning CHATID $chat_id API limit reached";
-                        $email_data['body']    = "In the past $chatid_duration minutes we reached more than $chatid_tokens tokens allowed for a single Chatid, the Chatid affected is ID:$chat_id , APP_ID:$app_id , APP_NAME:" . $application->getName() . ", MAIN DOMAIN:$main_domain . Please check your system";
-                        $this->defaultSMTPEmail($email_data, $value_id);
-
-                        // Initialize and use the ChatGPT API
-                        $chatAPI  = new Migachat_Model_ChatGPTAPI($apiUrl, $secret_key, $organization_id, $gpt_model);
-                        $response = $chatAPI->generateResponse($chat_history_string, $two_chat_history_conversation, 'admin', null);
-
-                        $user_chat_limit_responce = $bridge_obj->getUserChatLimitResponce();
-                        $translate_response       = $chatAPI->generateResponse("Just give the translation no other text and if the language of text is same than don't translate.Tranlate the text in $global_lang: " . $user_chat_limit_responce, $translate_system_prompt, 'admin', null);
-                        $payload                  = [
-                            'success' => true,
-                            'message' => $translate_response[1],
-                            'chat_id' => $chat_id,
-                        ];
-                        return $this->_sendJson($payload);
-                        exit;
-                    }
+                    $chat_id_data_exists = $chatLimitResult['limit_state']['chat_id_record'];
 
                     $channel          = '';
                     $allowed_channels = ['APP', 'WHATSAPP', 'TELEGRAM', 'MESSENGER', 'WEB', 'EMAIL', 'FB', 'INSTAGRAM', 'LINKEDIN', 'OTHER'];
@@ -979,11 +838,8 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
                     $chat_id_data['value_id'] = $value_id;
 
-                    $chat_id_obj         = new Migachat_Model_ModelChatIds();
-                    $chat_id_data_exists = $chat_id_obj->find(['value_id' => $value_id, 'chat_id' => $chat_id]);
-                    if (! $chat_id_data_exists->getId()) {
+                    if (! $chat_id_data_exists || ! $chat_id_data_exists->getId()) {
                         $chat_id_data['created_at'] = date('Y-m-d H:i:s');
-                        $chat_id_data_exists        = null;
                         $chat_id_data_exists        = (new Migachat_Model_ModelChatIds())->addData($chat_id_data)->save();
                     } else {
                         $chat_id_data['id'] = $chat_id_data_exists->getId();
@@ -2271,6 +2127,184 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             'params'       => $params,
             'ws_log_data'  => $ws_log_data,
             'chat_id_data' => [],
+        ];
+    }
+
+    /**
+     * Handles chat-specific limit enforcement and returns either a translated
+     * limit payload or the refreshed chat limit state when processing may
+     * continue.
+     *
+     * @param array $context
+     *
+     * @return array{payload: array|null, limit_state: array}
+     */
+    private function handleChatLimits(array $context)
+    {
+        $valueId          = $context['value_id'];
+        $chatId           = $context['chat_id'];
+        $chatIdDuration   = $context['chatid_duration'];
+        $chatIdTokens     = $context['chatid_tokens'];
+        $bridgeTokens     = $context['bridge_chatid_tokens'];
+        $mobile           = $context['mobile'] ?? '';
+
+        $chatIdRecord = (new Migachat_Model_ModelChatIds())->find([
+            'value_id' => $valueId,
+            'chat_id'  => $chatId,
+        ]);
+
+        $result = [
+            'payload'     => null,
+            'limit_state' => [
+                'chat_id_record'              => $chatIdRecord,
+                'requests_count'              => $chatIdRecord->getRequestsCount(),
+                'last_token_limit_reached_at' => $chatIdRecord->getLastTokenLimitReachedAt(),
+            ],
+        ];
+
+        if (! $chatIdRecord->getId()) {
+            return $result;
+        }
+
+        $lastLimitReachedAt = $chatIdRecord->getLastTokenLimitReachedAt();
+        if ($lastLimitReachedAt) {
+            $diffInSeconds = time() - strtotime($lastLimitReachedAt);
+
+            if ($diffInSeconds < 3600) {
+                $newCount     = (int) $chatIdRecord->getRequestsCount() + 1;
+                $chatIdRecord = (new Migachat_Model_ModelChatIds())->addData([
+                    'id'             => $chatIdRecord->getId(),
+                    'requests_count' => $newCount,
+                    'updated_at'     => date('Y-m-d H:i:s'),
+                ])->save();
+
+                $result['limit_state']['chat_id_record'] = $chatIdRecord;
+                $result['limit_state']['requests_count'] = $newCount;
+
+                $result['payload'] = $this->buildTranslatedLimitResponse($context);
+
+                return $result;
+            }
+
+            $chatIdRecord = (new Migachat_Model_ModelChatIds())->addData([
+                'id'                          => $chatIdRecord->getId(),
+                'requests_count'              => 0,
+                'last_token_limit_reached_at' => null,
+                'updated_at'                  => date('Y-m-d H:i:s'),
+            ])->save();
+
+            $chatLimitModel = new Migachat_Model_BridgrapiChatLimits();
+            $aiOffRecord    = $chatLimitModel->find([
+                'value_id' => $valueId,
+                'chat_id'  => $chatId,
+                'is_limit' => 0,
+            ]);
+            if ($aiOffRecord->getId() && ! $aiOffRecord->getIsLimit()) {
+                $chatLimitModel->delete();
+            }
+
+            $result['limit_state']['chat_id_record']              = $chatIdRecord;
+            $result['limit_state']['requests_count']              = 0;
+            $result['limit_state']['last_token_limit_reached_at'] = null;
+        }
+
+        $chatLimitModel   = new Migachat_Model_BridgrapiChatLimits();
+        $isLimitTurnedOff = $chatLimitModel->find([
+            'value_id' => $valueId,
+            'chat_id'  => $chatId,
+            'is_limit' => 1,
+        ]);
+
+        $totalTokens = $bridgeTokens[0]['total_tokens_sum'] ?? 0;
+        if ($totalTokens > $chatIdTokens && ! $isLimitTurnedOff->getId()) {
+            $this->logBridgeApiError(
+                [
+                    'value_id'    => $valueId,
+                    'customer_id' => $chatId,
+                    'mobile'      => $mobile,
+                ],
+                p__("Migachat", 'Chat id tokens limit reached!')
+            );
+
+            $chatIdRecord = (new Migachat_Model_ModelChatIds())->addData([
+                'id'                          => $chatIdRecord->getId(),
+                'requests_count'              => 1,
+                'last_token_limit_reached_at' => date('Y-m-d H:i:s'),
+                'updated_at'                  => date('Y-m-d H:i:s'),
+            ])->save();
+
+            $aiOffRecord = (new Migachat_Model_BridgrapiChatLimits())->find([
+                'value_id' => $valueId,
+                'chat_id'  => $chatId,
+                'is_limit' => 0,
+            ]);
+            if (! $aiOffRecord->getId()) {
+                (new Migachat_Model_BridgrapiChatLimits())->addData([
+                    'value_id'   => $valueId,
+                    'chat_id'    => $chatId,
+                    'is_limit'   => 0,
+                    'ai_off_at'  => date('Y-m-d H:i:s'),
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ])->save();
+            }
+
+            $result['limit_state']['chat_id_record']              = $chatIdRecord;
+            $result['limit_state']['requests_count']              = $chatIdRecord->getRequestsCount();
+            $result['limit_state']['last_token_limit_reached_at'] = $chatIdRecord->getLastTokenLimitReachedAt();
+
+            $result['payload'] = $this->buildTranslatedLimitResponse($context);
+
+            return $result;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Sends alert emails and generates the translated response displayed when
+     * chat limits are triggered.
+     */
+    private function buildTranslatedLimitResponse(array $context)
+    {
+        $valueId        = $context['value_id'];
+        $chatId         = $context['chat_id'];
+        $chatIdDuration = $context['chatid_duration'];
+        $chatIdTokens   = $context['chatid_tokens'];
+        $bridgeSettings = $context['bridge_obj'];
+
+        $chatHistoryString           = $context['chat_history_string'];
+        $twoChatHistoryConversation  = $context['two_chat_history_conversation'];
+        $globalLang                  = $context['global_lang'];
+        $translateSystemPrompt       = $context['translate_system_prompt'];
+        $apiUrl                      = $context['apiUrl'];
+        $secretKey                   = $context['secret_key'];
+        $organizationId              = $context['organization_id'];
+        $gptModel                    = $context['gpt_model'];
+
+        $appId      = (new Migachat_Model_Setting())->getAppIdByValueId($valueId);
+        $application = (new Application_Model_Application())->find($appId);
+        $mainDomain  = __get('main_domain');
+
+        $emailBody = "In the past $chatIdDuration minutes we reached more than $chatIdTokens tokens allowed for a single Chatid, the Chatid affected is ID:$chatId , APP_ID:$appId , APP_NAME:" . $application->getName() . ", MAIN DOMAIN:$mainDomain . Please check your system";
+
+        $emailData            = [];
+        $emailData['subject'] = "Warning CHATID $chatId API limit reached";
+        $emailData['body']    = $emailBody;
+
+        $this->defaultSMTPEmail($emailData, $valueId);
+
+        $chatAPI = new Migachat_Model_ChatGPTAPI($apiUrl, $secretKey, $organizationId, $gptModel);
+        $chatAPI->generateResponse($chatHistoryString, $twoChatHistoryConversation, 'admin', null);
+
+        $userChatLimitResponse = $bridgeSettings->getUserChatLimitResponce();
+        $prompt                 = "Just give the translation no other text and if the language of text is same than don't translate.Tranlate the text in $globalLang: " . $userChatLimitResponse;
+        $translateResponse      = $chatAPI->generateResponse($prompt, $translateSystemPrompt, 'admin', null);
+
+        return [
+            'success' => true,
+            'message' => $translateResponse[1],
+            'chat_id' => $chatId,
         ];
     }
 
