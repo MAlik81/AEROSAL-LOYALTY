@@ -825,119 +825,34 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                         // getting gdpr settings
                         $gdpr_settings = (new Migachat_Model_GDPR)->find(['value_id' => $value_id]);
 
-                        if ($gdpr_settings->getId() && $gdpr_settings->getGdprActive() == '1') {
+                        $consentResult = $this->handleConsentFlow(
+                            $chat_id_consent,
+                            $gdpr_settings,
+                            $translate_system_prompt,
+                            $message,
+                            [
+                                'chat_api'                     => $chatAPI,
+                                'chat_history_string'          => $chat_history_string,
+                                'two_chat_history_conversation'=> $two_chat_history_conversation,
+                                'value_id'                     => $value_id,
+                                'chat_id'                      => $chat_id,
+                                'setting_obj'                  => $setting_obj,
+                                'email'                        => $email,
+                                'name'                         => $name,
+                                'mobile'                       => $mobile,
+                                'channel'                      => $channel,
+                                'gdpr_link'                    => $gdpr_settings->getGdprLink(),
+                                'secret_key'                   => $secret_key,
+                                'organization_id'              => $organization_id,
+                            ]
+                        );
 
-                            $chat_history_string .= ' ' . $message;
-                            // translate gdpr texts here
-                            $chatAPI  = new Migachat_Model_ChatGPTAPI($apiUrl, $secret_key, $organization_id, $gpt_model);
-                            $response = $chatAPI->generateResponse($chat_history_string, $two_chat_history_conversation, 'admin', null);
-                            $language = $this->languages_list[$gdpr_settings->getDefaultLanguage()];
+                        if (! empty($consentResult['payload'])) {
+                            return $this->_sendJson($consentResult['payload']);
+                        }
 
-                            if ($response[0] === true && $response[1]) {
-                                $language              = str_ireplace("\n", ' ', $response[1]);
-                                $prepend_translate     = "Just give the translation of given text.No explainations, no other text. if the language of text is same than don't translate.Tranlate the text in $language: ";
-                                $GdprWelcomeText       = $gdpr_settings->getGdprWelcomeText();
-                                $CommercialWelcomeText = $gdpr_settings->getCommercialWelcomeText();
-                                $GdprSuccessText       = $gdpr_settings->getGdprSuccessText();
-                                $GdprFailureText       = $gdpr_settings->getGdprFailureText();
-                            } else {
-                                $GdprWelcomeText       = $gdpr_settings->getGdprWelcomeText();
-                                $CommercialWelcomeText = $gdpr_settings->getCommercialWelcomeText();
-                                $GdprSuccessText       = $gdpr_settings->getGdprSuccessText();
-                                $GdprFailureText       = $gdpr_settings->getGdprFailureText();
-                            }
-                            if ($chat_id_consent->getGdprConsent() == 2) {
-                                // save current user message for later responce
-                                $chatlogs_obj = new Migachat_Model_BridgeAPI();
-                                $chatlog_data = [
-                                    'value_id'           => $value_id,
-                                    'chat_id'            => $chat_id,
-                                    'chatbot_setting_id' => $setting_obj->getId(),
-                                    'role'               => 'user',
-                                    'message_content'    => $this->removeEmojis($message),
-                                    'user_email'         => $email,
-                                    'user_mobile'        => $mobile,
-                                    'user_name'          => $name,
-                                    'is_sent'            => 3,
-                                    'channel'            => $channel,
-                                    'has_error'          => 0,
-                                    'is_read'            => 1,
-                                    'error_description'  => "",
-                                    'created_at'         => date("Y-m-d H:i:s"),
-                                    'updated_at'         => date("Y-m-d H:i:s"),
-                                ];
-                                $chatlogs_obj->addData($chatlog_data)->save();
-
-                                if ($language != $this->languages_list[$gdpr_settings->getDefaultLanguage()]) {
-                                    $GdprWelcomeText_response = $chatAPI->generateResponse($prepend_translate . $GdprWelcomeText, $translate_system_prompt, 'admin', null);
-                                    $GdprWelcomeText          = $GdprWelcomeText_response[1];
-                                }
-                                // ask for consent and update flag in db
-                                $chat_id_consent->setGdprConsent(3)->setCreatedAt(date('Y-m-d H:i:s'))->save();
-                                $response            = [];
-                                $response['success'] = true;
-                                $response['chat_id'] = $chat_id;
-                                $response['message'] = $GdprWelcomeText . '<a href="' . $gdpr_settings->getGdprLink() . '">' . $gdpr_settings->getGdprLink() . '</a>';
-                                return $this->_sendJson($response);
-                            } elseif ($chat_id_consent->getGdprConsent() == 3) {
-                                if ($this->checkPositiveResponce($gdpr_settings->getGdprWelcomeText(), $message, $secret_key, $organization_id)) {
-                                    # if comercial is enable than send that otherwise success message
-                                    $chat_id_consent->setGdprConsent(1)->setGdprConsentTimestamp(date('Y-m-d H:i:s'))->save();
-                                    if ($gdpr_settings->getCommercialActive() == '1') {
-
-                                        if ($language != $this->languages_list[$gdpr_settings->getDefaultLanguage()]) {
-                                            $CommercialWelcomeText_response = $chatAPI->generateResponse($prepend_translate . $CommercialWelcomeText, $translate_system_prompt, 'admin', null);
-                                            $CommercialWelcomeText          = $CommercialWelcomeText_response[1];
-                                        }
-                                        $chat_id_consent->setCommercialConsent(3)->save();
-                                        $response            = [];
-                                        $response['success'] = true;
-                                        $response['chat_id'] = $chat_id;
-                                        $response['message'] = $CommercialWelcomeText;
-                                        return $this->_sendJson($response);
-                                    } else {
-                                        if ($language != $this->languages_list[$gdpr_settings->getDefaultLanguage()]) {
-                                            $GdprSuccessText_response = $chatAPI->generateResponse($prepend_translate . $GdprSuccessText, $translate_system_prompt, 'admin', null);
-                                            $GdprSuccessText          = $GdprSuccessText_response[1];
-                                        }
-                                        // $response = array();
-                                        // $response['success'] = true;
-                                        // $response['chat_id'] = $chat_id;
-                                        // $response['message'] = $GdprSuccessText;
-                                        // return $this->_sendJson($response);
-                                        $ai_awnser_prepend = $GdprSuccessText . ' ';
-                                    }
-                                } else {
-                                    if ($language != $this->languages_list[$gdpr_settings->getDefaultLanguage()]) {
-                                        $GdprFailureText_response = $chatAPI->generateResponse($prepend_translate . $GdprFailureText, $translate_system_prompt, 'admin', null);
-                                        $GdprFailureText          = $GdprFailureText_response[1];
-                                    }
-                                    $response            = [];
-                                    $response['success'] = true;
-                                    $response['chat_id'] = $chat_id;
-                                    $response['message'] = $GdprFailureText;
-                                    return $this->_sendJson($response);
-                                }
-                            } elseif ($chat_id_consent->getGdprConsent() == 1) {
-                                if ($gdpr_settings->getCommercialActive() == '1' && $chat_id_consent->getCommercialConsent() == 3) {
-                                    if ($this->checkPositiveResponce($gdpr_settings->getCommercialWelcomeText(), $message, $secret_key, $organization_id)) {
-                                        $chat_id_consent->setCommercialConsent(1)->setCommercialConsentTimestamp(date('Y-m-d H:i:s'))->save();
-                                    } else {
-                                        $chat_id_consent->setCommercialConsent(0)->save();
-                                    }
-                                    if ($language != $this->languages_list[$gdpr_settings->getDefaultLanguage()]) {
-                                        $GdprSuccessText_response = $chatAPI->generateResponse($prepend_translate . $GdprSuccessText, $translate_system_prompt, 'admin', null);
-                                        $GdprSuccessText          = $GdprSuccessText_response[1];
-                                    }
-                                    // $response = array();
-                                    // $response['success'] = true;
-                                    // $response['chat_id'] = $chat_id;
-                                    // $response['message'] = $GdprSuccessText;
-                                    // return $this->_sendJson($response);
-                                    $ai_awnser_prepend = $GdprSuccessText . ' ';
-                                }
-                            }
-
+                        if (! empty($consentResult['consent_satisfied']) && ! empty($consentResult['prepend'])) {
+                            $ai_awnser_prepend = $consentResult['prepend'];
                         }
                         // gdpr and commercial consent endpoint
                         // =============================
@@ -1632,6 +1547,177 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         }
 
         return $conversationTotals;
+    }
+
+    /**
+     * Handle GDPR/commercial consent translations, state transitions, and early responses.
+     *
+     * @param Migachat_Model_ModelChatIds $chatIdConsent
+     * @param Migachat_Model_GDPR         $gdprSettings
+     * @param array                       $translateSystemPrompt
+     * @param string                      $message
+     * @param array                       $context
+     *
+     * @return array{payload: array|null, prepend: string, consent_satisfied: bool}
+     */
+    private function handleConsentFlow($chatIdConsent, $gdprSettings, array $translateSystemPrompt, $message, array $context)
+    {
+        $result = [
+            'payload'           => null,
+            'prepend'           => '',
+            'consent_satisfied' => false,
+        ];
+
+        if (! $gdprSettings || ! $gdprSettings->getId()) {
+            $result['consent_satisfied'] = true;
+            return $result;
+        }
+
+        if ($gdprSettings->getGdprActive() != '1') {
+            $result['consent_satisfied'] = true;
+            return $result;
+        }
+
+        $chatAPI = $context['chat_api'] ?? null;
+        if (! $chatAPI instanceof Migachat_Model_ChatGPTAPI) {
+            $result['consent_satisfied'] = true;
+            return $result;
+        }
+
+        $chatHistoryString          = $context['chat_history_string'] ?? '';
+        $twoChatHistoryConversation = $context['two_chat_history_conversation'] ?? [];
+
+        $defaultLanguageKey  = $gdprSettings->getDefaultLanguage();
+        $defaultLanguageName = $this->languages_list[$defaultLanguageKey] ?? ($this->languages_list['it'] ?? 'Italian');
+        $language            = $defaultLanguageName;
+        $prependTranslate    = null;
+
+        $response = $chatAPI->generateResponse($chatHistoryString, $twoChatHistoryConversation, 'admin', null);
+        if ($response[0] === true && ! empty($response[1])) {
+            $language         = str_ireplace("\n", ' ', $response[1]);
+            $prependTranslate = "Just give the translation of given text.No explainations, no other text. if the language of text is same than don't translate.Tranlate the text in $language: ";
+        }
+
+        $gdprWelcomeText       = $gdprSettings->getGdprWelcomeText();
+        $commercialWelcomeText = $gdprSettings->getCommercialWelcomeText();
+        $gdprSuccessText       = $gdprSettings->getGdprSuccessText();
+        $gdprFailureText       = $gdprSettings->getGdprFailureText();
+
+        $shouldTranslate = $prependTranslate && $language != $defaultLanguageName;
+
+        $translateText = function ($text) use ($chatAPI, $translateSystemPrompt, $prependTranslate, $shouldTranslate) {
+            if (! $shouldTranslate) {
+                return $text;
+            }
+
+            $translationResponse = $chatAPI->generateResponse($prependTranslate . $text, $translateSystemPrompt, 'admin', null);
+            if ($translationResponse[0] === true && ! empty($translationResponse[1])) {
+                return $translationResponse[1];
+            }
+
+            return $text;
+        };
+
+        $chatId          = $context['chat_id'] ?? null;
+        $valueId         = $context['value_id'] ?? null;
+        $settingObj      = $context['setting_obj'] ?? null;
+        $email           = $context['email'] ?? null;
+        $name            = $context['name'] ?? null;
+        $mobile          = $context['mobile'] ?? null;
+        $channel         = $context['channel'] ?? null;
+        $gdprLink        = $context['gdpr_link'] ?? $gdprSettings->getGdprLink();
+        $secretKey       = $context['secret_key'] ?? null;
+        $organizationId  = $context['organization_id'] ?? null;
+
+        if ($chatIdConsent->getGdprConsent() == 2) {
+            $chatlogs_obj = new Migachat_Model_BridgeAPI();
+            $chatlog_data = [
+                'value_id'           => $valueId,
+                'chat_id'            => $chatId,
+                'chatbot_setting_id' => ($settingObj) ? $settingObj->getId() : null,
+                'role'               => 'user',
+                'message_content'    => $this->removeEmojis($message),
+                'user_email'         => $email,
+                'user_mobile'        => $mobile,
+                'user_name'          => $name,
+                'is_sent'            => 3,
+                'channel'            => $channel,
+                'has_error'          => 0,
+                'is_read'            => 1,
+                'error_description'  => "",
+                'created_at'         => date("Y-m-d H:i:s"),
+                'updated_at'         => date("Y-m-d H:i:s"),
+            ];
+            $chatlogs_obj->addData($chatlog_data)->save();
+
+            $gdprWelcomeText = $translateText($gdprWelcomeText);
+            $chatIdConsent->setGdprConsent(3)->setCreatedAt(date('Y-m-d H:i:s'))->save();
+
+            $result['payload'] = [
+                'success' => true,
+                'chat_id' => $chatId,
+                'message' => $gdprWelcomeText . '<a href="' . $gdprLink . '">' . $gdprLink . '</a>',
+            ];
+
+            return $result;
+        }
+
+        if ($chatIdConsent->getGdprConsent() == 3) {
+            $isPositive = $this->checkPositiveResponce($gdprSettings->getGdprWelcomeText(), $message, $secretKey, $organizationId);
+            if ($isPositive) {
+                $chatIdConsent->setGdprConsent(1)->setGdprConsentTimestamp(date('Y-m-d H:i:s'))->save();
+                if ($gdprSettings->getCommercialActive() == '1') {
+                    $commercialWelcomeText = $translateText($commercialWelcomeText);
+                    $chatIdConsent->setCommercialConsent(3)->save();
+
+                    $result['payload'] = [
+                        'success' => true,
+                        'chat_id' => $chatId,
+                        'message' => $commercialWelcomeText,
+                    ];
+
+                    return $result;
+                }
+
+                $gdprSuccessText             = $translateText($gdprSuccessText);
+                $result['prepend']           = $gdprSuccessText . ' ';
+                $result['consent_satisfied'] = true;
+
+                return $result;
+            }
+
+            $gdprFailureText      = $translateText($gdprFailureText);
+            $result['payload']    = [
+                'success' => true,
+                'chat_id' => $chatId,
+                'message' => $gdprFailureText,
+            ];
+            $result['prepend']           = '';
+            $result['consent_satisfied'] = false;
+
+            return $result;
+        }
+
+        if ($chatIdConsent->getGdprConsent() == 1) {
+            if ($gdprSettings->getCommercialActive() == '1' && $chatIdConsent->getCommercialConsent() == 3) {
+                $isPositive = $this->checkPositiveResponce($gdprSettings->getCommercialWelcomeText(), $message, $secretKey, $organizationId);
+                if ($isPositive) {
+                    $chatIdConsent->setCommercialConsent(1)->setCommercialConsentTimestamp(date('Y-m-d H:i:s'))->save();
+                } else {
+                    $chatIdConsent->setCommercialConsent(0)->save();
+                }
+
+                $gdprSuccessText             = $translateText($gdprSuccessText);
+                $result['prepend']           = $gdprSuccessText . ' ';
+                $result['consent_satisfied'] = true;
+
+                return $result;
+            }
+        }
+
+        $result['consent_satisfied'] = true;
+
+        return $result;
     }
 
     public function checkPositiveResponce($question, $text, $secret_key, $organization_id)
