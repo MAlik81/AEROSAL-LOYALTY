@@ -2305,6 +2305,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             'status'  => 'failure',
             'message' => $missing_params,
         ];
+
     }
 
     /**
@@ -2325,6 +2326,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             }
 
             return $post_params;
+
         }
 
         return $request->getParams();
