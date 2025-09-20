@@ -2036,72 +2036,14 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         $response          = [];
         $assistantContext  = $conversationContext['assistant_context'] ?? [];
         $useAssistant      = ! empty($assistantContext['use_assistant']);
-        $threadId          = $assistantContext['thread_id'] ?? null;
         $openai            = $executionContext['openai'] ?? null;
 
         if ($useAssistant) {
-            if (! $openai) {
-                throw new Exception('Assistants API client is not available');
-            }
-
-            $messageToThread = $openai->addMessageToThread($threadId, 'user', $preparedMsg);
-            if (! isset($messageToThread['id'])) {
-                throw new Exception('Failed to add message to thread');
-            }
-
-            $assistantId = $assistantContext['assistant_id'] ?? null;
-            if (empty($assistantId)) {
-                throw new Exception('Assistant ID is not set in chatbot settings');
-            }
-
-            $opts = $assistantContext['assistant_run_opts'] ?? [];
-            $run  = $openai->runThread($threadId, $assistantId, $opts);
-            if (! isset($run['id'])) {
-                throw new Exception('Failed to initiate assistant run');
-            }
-
-            $runId     = $run['id'];
-            $deadline  = time() + 120;
-            $runStatus = null;
-
-            while (true) {
-                usleep(600000);
-
-                $status = $openai->getRunStatus($threadId, $runId);
-                if (! isset($status['status'])) {
-                    throw new Exception('Failed to get run status');
-                }
-
-                $runStatus = $status['status'];
-
-                if ($runStatus === 'requires_action' && ! empty($status['required_action']['submit_tool_outputs'])) {
-                    throw new Exception('Run requires tool outputs, but no tool handler is implemented.');
-                }
-
-                if (in_array($runStatus, ['completed', 'failed', 'cancelled', 'expired'])) {
-                    break;
-                }
-
-                if (time() > $deadline) {
-                    throw new Exception("Run did not complete in time (last status: {$runStatus})");
-                }
-            }
-
-            $promptTokens     = $status['usage']['prompt_tokens'] ?? 0;
-            $completionTokens = $status['usage']['completion_tokens'] ?? 0;
-            $totalTokens      = $status['usage']['total_tokens'] ?? 0;
-
-            $messages = $openai->getThreadMessages($threadId, ['order' => 'desc', 'limit' => 1]);
-            if (! isset($messages['data'][0])) {
-                throw new Exception('No messages found in thread');
-            }
-
-            $assistantResponse = $messages['data'][0]['content'][0]['text']['value'] ?? '[No response content]';
-
-            $responseMsg = $this->removeEmojis(str_ireplace("\n", '<br>', $assistantResponse));
-            $response    = [true, $responseMsg, $promptTokens, $completionTokens, $totalTokens];
+            $response       = $this->runAssistantConversation($assistantContext, $preparedMsg, $openai);
+            $isAssistantRun = true;
         } else {
-            $response = $chatApi->generateResponse($preparedMsg, $conversation, $name, $maxTokens);
+            $response       = $chatApi->generateResponse($preparedMsg, $conversation, $name, $maxTokens);
+            $isAssistantRun = false;
         }
 
         $valueId       = $executionContext['value_id'] ?? ($conversationContext['value_id'] ?? null);
@@ -2149,7 +2091,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         $maxTokenResponse   = null;
         $userMaxTokensReply = $conversationContext['user_max_tokens_responce'] ?? '';
 
-        if ($maxTokens == $response[3]) {
+        if (! $isAssistantRun && $maxTokens == $response[3]) {
             $chatHistoryString          = $conversationContext['chat_history_string'] ?? '';
             $twoChatHistoryConversation = $conversationContext['two_chat_history_conversation'] ?? [];
             $chatHistoryString         .= $preparedMsg . ' ' . $responseMsg;
@@ -2213,6 +2155,74 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         (new Migachat_Model_Webservicelogs())->addData($errorArray)->save();
 
         return $payload;
+    }
+
+    private function runAssistantConversation(array $assistantContext, $preparedMsg, $openai)
+    {
+        if (! $openai) {
+            throw new Exception('Assistants API client is not available');
+        }
+
+        $threadId = $assistantContext['thread_id'] ?? null;
+
+        $messageToThread = $openai->addMessageToThread($threadId, 'user', $preparedMsg);
+        if (! isset($messageToThread['id'])) {
+            throw new Exception('Failed to add message to thread');
+        }
+
+        $assistantId = $assistantContext['assistant_id'] ?? null;
+        if (empty($assistantId)) {
+            throw new Exception('Assistant ID is not set in chatbot settings');
+        }
+
+        $opts = $assistantContext['assistant_run_opts'] ?? [];
+        $run  = $openai->runThread($threadId, $assistantId, $opts);
+        if (! isset($run['id'])) {
+            throw new Exception('Failed to initiate assistant run');
+        }
+
+        $runId     = $run['id'];
+        $deadline  = time() + 120;
+        $runStatus = null;
+        $status    = null;
+
+        while (true) {
+            usleep(600000);
+
+            $status = $openai->getRunStatus($threadId, $runId);
+            if (! isset($status['status'])) {
+                throw new Exception('Failed to get run status');
+            }
+
+            $runStatus = $status['status'];
+
+            if ($runStatus === 'requires_action' && ! empty($status['required_action']['submit_tool_outputs'])) {
+                throw new Exception('Run requires tool outputs, but no tool handler is implemented.');
+            }
+
+            if (in_array($runStatus, ['completed', 'failed', 'cancelled', 'expired'])) {
+                break;
+            }
+
+            if (time() > $deadline) {
+                throw new Exception("Run did not complete in time (last status: {$runStatus})");
+            }
+        }
+
+        $promptTokens     = $status['usage']['prompt_tokens'] ?? 0;
+        $completionTokens = $status['usage']['completion_tokens'] ?? 0;
+        $totalTokens      = $status['usage']['total_tokens'] ?? 0;
+
+        $messages = $openai->getThreadMessages($threadId, ['order' => 'desc', 'limit' => 1]);
+        if (! isset($messages['data'][0])) {
+            throw new Exception('No messages found in thread');
+        }
+
+        $assistantResponse = $messages['data'][0]['content'][0]['text']['value'] ?? '[No response content]';
+
+        $responseMsg = $this->removeEmojis(str_ireplace("\n", '<br>', $assistantResponse));
+
+        return [true, $responseMsg, $promptTokens, $completionTokens, $totalTokens];
     }
 
     private function handleOperatorEscalation(array $context)
