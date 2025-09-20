@@ -616,7 +616,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             $ws_log_data    = $requestContext['ws_log_data'];
             $chat_id_data   = $requestContext['chat_id_data'];
 
-
             $missingParamsResponse = $this->validateRequiredParams($params, $ws_log_data);
             if ($missingParamsResponse) {
                 return $this->_sendJson($missingParamsResponse);
@@ -2238,7 +2237,9 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         return $responce;
     }
 
-
+    /**
+     * Prepares request, logging, and chat state containers used throughout the controller.
+     */
     private function initializeRequestContext()
     {
         $params = $this->extractRequestParams();
@@ -2282,28 +2283,30 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
      */
     private function validateRequiredParams(array $params, array &$ws_log_data)
     {
-        $requiredParams  = ['instance_id', 'message', 'auth_token'];
+        $requiredParams   = ['instance_id', 'message', 'auth_token'];
         $missing_messages = [];
 
         foreach ($requiredParams as $param) {
-            if (! isset($params[$param])) {
+            if (! isset($params[$param]) || $params[$param] === '') {
                 $missing_messages[] = " Missing required parameter: $param <br>";
-            } else {
-                $ws_log_data[$param] = $params[$param];
+                continue;
             }
+
+            $ws_log_data[$param] = $params[$param];
         }
 
-        if (! empty($missing_messages)) {
-            $missing_params = implode('', $missing_messages);
-            $ws_log_data    = $this->logBridgeApiError($ws_log_data, $missing_params);
-
-            return [
-                'status'  => 'failure',
-                'message' => $missing_params,
-            ];
+        if (empty($missing_messages)) {
+            return null;
         }
 
-        return null;
+        $missing_params = implode('', $missing_messages);
+        $this->logBridgeApiError($ws_log_data, $missing_params);
+
+        return [
+            'status'  => 'failure',
+            'message' => $missing_params,
+        ];
+
     }
 
     /**
@@ -2323,9 +2326,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 throw new Exception(p__("Migachat", 'Invalid request format'), 1);
             }
 
-            if ($post_params && isset($post_params['instance_id'])) {
-                return $post_params;
-            }
+            return $post_params;
 
         }
 
