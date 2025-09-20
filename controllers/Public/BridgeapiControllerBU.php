@@ -14,7 +14,7 @@
  * - Supports multiple languages for better user experience.
  */
 
-class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
+class Migachat_Public_BridgeapiControllerBU extends Migachat_Controller_Default
 {
     private $languages_list = [
         "sq"  => "Albanian",
@@ -609,15 +609,75 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         try {
 
             $ai_awnser_prepend = '';
-            // Extract incoming request details and bootstrap controller state.
-            $requestContext = $this->initializeRequestContext();
-            $params         = $requestContext['params'];
-            $ws_log_data    = $requestContext['ws_log_data'];
-            $chat_id_data   = $requestContext['chat_id_data'];
+            // Extract incoming request and validate parameters.
+            $request     = $this->getRequest();
+            $params      = $request->getParams();
+            $post_params = $request->getRawBody();
+            $post_params = json_decode($post_params, true);
 
-            $missingParamsResponse = $this->validateRequiredParams($params, $ws_log_data);
-            if ($missingParamsResponse) {
-                return $this->_sendJson($missingParamsResponse);
+            if (! is_array($post_params)) {
+                throw new Exception(p__("Migachat", 'Invalid request format'), 1);
+            }
+            if (count($post_params) && isset($post_params['instance_id'])) {
+                $params = $post_params;
+            } else {
+                $params = $request->getParams();
+            }
+
+            // Initialize an array to store log data for webservice
+            $ws_log_data  = [];
+            $chat_id_data = [];
+
+            $normalizeNumberList = static function ($numbers) {
+                if (! $numbers) {
+                    return [];
+                }
+
+                if (is_array($numbers)) {
+                    $items = $numbers;
+                } else {
+                    $numbers = str_replace([';', "\r\n", "\n", "\r"], ',', $numbers);
+                    $items   = preg_split('/[,\s]+/', $numbers);
+                }
+
+                if (! is_array($items)) {
+                    return [];
+                }
+
+                $items = array_map(static function ($item) {
+                    return trim($item);
+                }, $items);
+
+                return array_values(array_filter($items, static function ($item) {
+                    return $item !== '';
+                }));
+            };
+
+            // Check if required parameters exist
+            $requiredParams = ['instance_id', 'message', 'auth_token'];
+            $missing_params = "";
+            foreach ($requiredParams as $param) {
+                if (! isset($params[$param])) {
+                    $missing_params .= " Missing required parameter: $param <br>";
+                } else {
+                    $ws_log_data[$param] = $params[$param];
+                }
+            }
+            if ($missing_params !== "") {
+                // Log errors for missing parameters or mismatched authentication.
+                $ws_log_data['has_error']         = 1;
+                $ws_log_data['error_description'] = $missing_params;
+                $ws_log_data['platform']          = 'Bridge API';
+                $ws_log_data['created_at']        = date("Y-m-d");
+                (new Migachat_Model_Webservicelogs())->addData($ws_log_data)->save();
+                $response = [
+                    'status'  => 'failure',
+                    'message' => $missing_params,
+                ];
+                // return $response;
+                return $this->_sendJson($response);
+
+                throw new Exception(json_encode($response), 1);
             } else {
                 // Extract parameters
                 $value_id   = $params['instance_id'];
@@ -630,10 +690,13 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 $message = urldecode($params['message']);
                 // Authenticate using auth token
                 if ($auth_token !== $bridge_obj->getAuthToken() || trim($auth_token) == '') {
-                    $this->logBridgeApiError(
-                        ['value_id' => $value_id],
-                        p__("Migachat", 'Authentication token mismatch')
-                    );
+                    $error_array                      = [];
+                    $error_array['value_id']          = $value_id;
+                    $error_array['has_error']         = 1;
+                    $error_array['error_description'] = p__("Migachat", 'Authentication token mismatch');
+                    $error_array['platform']          = 'Bridge API';
+                    $error_array['created_at']        = date("Y-m-d");
+                    (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                     throw new Exception(p__("Migachat", 'Authentication token mismatch'), 1);
                 }
                 // bridge api tokens setup
@@ -790,10 +853,13 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
                 $bridge_overall_tokens = (new Migachat_Model_BridgeAPI())->getOverAllTokens($value_id, $over_all_duration);
                 if ($bridge_overall_tokens[0]['total_tokens_sum'] > $over_tokens) {
-                    $this->logBridgeApiError(
-                        ['value_id' => $value_id],
-                        p__("Migachat", 'Overall token limit reached!')
-                    );
+                    $error_array                      = [];
+                    $error_array['value_id']          = $value_id;
+                    $error_array['has_error']         = 1;
+                    $error_array['error_description'] = p__("Migachat", 'Overall token limit reached!');
+                    $error_array['platform']          = 'Bridge API';
+                    $error_array['created_at']        = date("Y-m-d");
+                    (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
 
                     $app_id      = (new Migachat_Model_Setting())->getAppIdByValueId($value_id);
                     $application = (new Application_Model_Application())->find($app_id);
@@ -897,14 +963,14 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
                         // Use the preg_match function to check if the mobile number matches the pattern
                         if (! preg_match($pattern, $mobile)) {
-                            $error_message = p__("Migachat", 'Invalide mobile number format') . ' ' . $mobile;
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                $error_message
-                            );
+                            $error_array                      = [];
+                            $error_array['value_id']          = $value_id;
+                            $error_array['has_error']         = 1;
+                            $error_array['error_description'] = p__("Migachat", 'Invalide mobile number format') . ' ' . $mobile;
+                            $error_array['platform']          = 'Bridge API';
+                            $error_array['customer_id']       = $chat_id;
+                            $error_array['created_at']        = date("Y-m-d");
+                            (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                             throw new Exception(p__("Migachat", 'Invalide mobile number format'), 1);
                         }
 
@@ -913,29 +979,29 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                         $setting = new Migachat_Model_Setting();
                         $setting->find(1);
 
-                        $global_blacklisted_numbers = $this->normalizeNumberList($setting->getBlacklistedNumbers());
+                        $global_blacklisted_numbers = $normalizeNumberList($setting->getBlacklistedNumbers());
                         if (! empty($global_blacklisted_numbers) && in_array($mobile, $global_blacklisted_numbers, true)) {
-                            $error_message = p__("Migachat", 'Mobile number is blacklisted') . ' ' . $mobile;
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                $error_message
-                            );
+                            $error_array                      = [];
+                            $error_array['value_id']          = $value_id;
+                            $error_array['has_error']         = 1;
+                            $error_array['error_description'] = p__("Migachat", 'Mobile number is blacklisted') . ' ' . $mobile;
+                            $error_array['platform']          = 'Bridge API';
+                            $error_array['customer_id']       = $chat_id;
+                            $error_array['created_at']        = date("Y-m-d");
+                            (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                             throw new Exception(p__("Migachat", 'Mobile number is blacklisted'), 1);
                         }
 
-                        $permanent_blacklisted_numbers = $this->normalizeNumberList($app_setting_obj->getPermanentBlacklistedMobileNumbers());
+                        $permanent_blacklisted_numbers = $normalizeNumberList($app_setting_obj->getPermanentBlacklistedMobileNumbers());
                         if (! empty($permanent_blacklisted_numbers) && in_array($mobile, $permanent_blacklisted_numbers, true)) {
-                            $error_message = p__("Migachat", 'Mobile number is blacklisted') . ' ' . $mobile;
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                $error_message
-                            );
+                            $error_array                      = [];
+                            $error_array['value_id']          = $value_id;
+                            $error_array['has_error']         = 1;
+                            $error_array['error_description'] = p__("Migachat", 'Mobile number is blacklisted') . ' ' . $mobile;
+                            $error_array['platform']          = 'Bridge API';
+                            $error_array['customer_id']       = $chat_id;
+                            $error_array['created_at']        = date("Y-m-d");
+                            (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                             throw new Exception(p__("Migachat", 'Mobile number is blacklisted'), 1);
                         }
                     }
@@ -963,20 +1029,21 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                                         $setting = new Migachat_Model_Setting();
                                         $setting->find(1);
 
-                                        $existing_blacklisted_numbers = $this->normalizeNumberList($setting->getBlacklistedNumbers());
+                                        $existing_blacklisted_numbers = $normalizeNumberList($setting->getBlacklistedNumbers());
                                         if (! in_array($mobile, $existing_blacklisted_numbers, true)) {
                                             $existing_blacklisted_numbers[] = $mobile;
                                             $setting->setBlacklistedNumbers(implode(',', $existing_blacklisted_numbers))->save();
                                         }
                                     }
 
-                                    $this->logBridgeApiError(
-                                        [
-                                            'value_id'    => $value_id,
-                                            'customer_id' => $chat_id,
-                                        ],
-                                        p__("Migachat", 'Chat id requests limit reached and after 3 requests in 1 hour, blacklisted permanently!')
-                                    );
+                                    $error_array                      = [];
+                                    $error_array['value_id']          = $value_id;
+                                    $error_array['has_error']         = 1;
+                                    $error_array['customer_id']       = $chat_id;
+                                    $error_array['error_description'] = p__("Migachat", 'Chat id requests limit reached and after 3 requests in 1 hour, blacklisted permanently!');
+                                    $error_array['platform']          = 'Bridge API';
+                                    $error_array['created_at']        = date("Y-m-d");
+                                    (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
 
                                     $app_id                = (new Migachat_Model_Setting())->getAppIdByValueId($value_id);
                                     $application           = (new Application_Model_Application())->find($app_id);
@@ -1050,13 +1117,15 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                     // dd($is_limit_turned_off->getData(),$bridge_chatid_tokens[0]['total_tokens_sum'],$chatid_tokens,$chat_id_data_for_limit->getData());
                     // check token limit for chat_id here
                     if ($bridge_chatid_tokens[0]['total_tokens_sum'] > $chatid_tokens && ! $is_limit_turned_off->getId()) {
-                        $this->logBridgeApiError(
-                            [
-                                'value_id'    => $value_id,
-                                'customer_id' => $chat_id,
-                            ],
-                            p__("Migachat", 'Chat id tokens limit reached!')
-                        );
+                        $error_array                      = [];
+                        $error_array['value_id']          = $value_id;
+                        $error_array['has_error']         = 1;
+                        $error_array['customer_id']       = $chat_id;
+                        $error_array['error_description'] = p__("Migachat", 'Chat id tokens limit reached!');
+                        $error_array['platform']          = 'Bridge API';
+                        $error_array['created_at']        = date("Y-m-d");
+
+                        (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
 
                         $chat_id_data_3                                = [];
                         $chat_id_data_3['id']                          = $chat_id_data_for_limit->getId();
@@ -1109,14 +1178,14 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                     if (isset($params['channel'])) {
                         $channel = strtoupper($params['channel']);
                         if (! in_array($channel, $allowed_channels)) {
-                            $error_message = p__("Migachat", 'Channel not allowed') . $channel;
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                $error_message
-                            );
+                            $error_array                      = [];
+                            $error_array['value_id']          = $value_id;
+                            $error_array['has_error']         = 1;
+                            $error_array['error_description'] = p__("Migachat", 'Channel not allowed') . $channel;
+                            $error_array['platform']          = 'Bridge API';
+                            $error_array['customer_id']       = $chat_id;
+                            $error_array['created_at']        = date("Y-m-d");
+                            (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                             throw new Exception(p__("Migachat", 'Channel not allowed'), 1);
                         }
 
@@ -1134,13 +1203,14 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
                         // Use the preg_match function to check if the email matches the pattern
                         if (! preg_match($pattern, $email)) {
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                p__("Migachat", 'Invalide email format')
-                            );
+                            $error_array                      = [];
+                            $error_array['value_id']          = $value_id;
+                            $error_array['has_error']         = 1;
+                            $error_array['error_description'] = p__("Migachat", 'Invalide email format');
+                            $error_array['platform']          = 'Bridge API';
+                            $error_array['customer_id']       = $chat_id;
+                            $error_array['created_at']        = date("Y-m-d");
+                            (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                             throw new Exception(p__("Migachat", 'Invalide Email format'), 1);
                         }
                         $chat_id_data['user_email'] = $email;
@@ -1372,14 +1442,17 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                         $last_two_messages_check_obj = new Migachat_Model_BridgeAPI();
                         $last_two_messages_check     = $last_two_messages_check_obj->lastTwoMessagesCheck($value_id, $chat_id, $message);
                         if ($last_two_messages_check) {
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                    'message'     => $message,
-                                ],
-                                p__("Migachat", 'Repeating messages more than 2 times is not allowed!')
-                            );
+
+                            $error_array                      = [];
+                            $error_array['value_id']          = $value_id;
+                            $error_array['has_error']         = 1;
+                            $error_array['customer_id']       = $chat_id;
+                            $error_array['error_description'] = p__("Migachat", 'Repeating messages more than 2 times is not allowed!');
+                            $error_array['platform']          = 'Bridge API';
+                            $error_array['message']           = $message;
+                            $error_array['customer_id']       = $chat_id;
+                            $error_array['created_at']        = date("Y-m-d");
+                            (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                             throw new Exception(p__("Migachat", 'Repeating messages more than 2 times is not allowed!'));
                         }
                         // chackpoint for last two same messages ends
@@ -1931,25 +2004,29 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                                 'message' => $this->removeEmojis($response[1]),
                                 'chat_id' => $chat_id,
                             ];
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'message'     => $message,
-                                    'customer_id' => $chat_id,
-                                    'message_id'  => $lastInsertId->getId(),
-                                ],
-                                $response[1]
-                            );
+                            $error_array                      = [];
+                            $error_array['value_id']          = $value_id;
+                            $error_array['has_error']         = 1;
+                            $error_array['error_description'] = $response[1];
+                            $error_array['message']           = $message;
+                            $error_array['customer_id']       = $chat_id;
+                            $error_array['message_id']        = $lastInsertId->getId();
+                            $error_array['platform']          = 'Bridge API';
+                            $error_array['created_at']        = date("Y-m-d");
+                            (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                         }
 
                         return $this->_sendJson($payload);
                         exit;
                     }
                 } else {
-                    $this->logBridgeApiError(
-                        ['value_id' => $value_id],
-                        p__("Migachat", 'Application settings mismatch')
-                    );
+                    $error_array                      = [];
+                    $error_array['value_id']          = $value_id;
+                    $error_array['has_error']         = 1;
+                    $error_array['error_description'] = p__("Migachat", 'Application settings mismatch');
+                    $error_array['platform']          = 'Bridge API';
+                    $error_array['created_at']        = date("Y-m-d");
+                    (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
                     throw new Exception(p__("Migachat", 'Application settings mismatch'), 1);
                 }
             }
@@ -2234,131 +2311,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             $responce['message'] = $e->getMessage();
         }
         return $responce;
-    }
-
-    /**
-     * Prepares request, logging, and chat state containers used throughout the controller.
-     */
-    private function initializeRequestContext()
-    {
-        $params = $this->extractRequestParams();
-
-        $ws_log_data = [];
-        foreach (['instance_id', 'message', 'auth_token'] as $field) {
-            if (isset($params[$field])) {
-                $ws_log_data[$field] = $params[$field];
-            }
-        }
-
-        return [
-            'params'       => $params,
-            'ws_log_data'  => $ws_log_data,
-            'chat_id_data' => [],
-        ];
-    }
-
-    /**
-     * Logs an error entry to the Bridge API webservice log and returns the payload.
-     */
-    private function logBridgeApiError(array $data, $description)
-    {
-        $data['has_error']         = 1;
-        $data['error_description'] = $description;
-        $data['platform']          = 'Bridge API';
-        $data['created_at']        = date('Y-m-d');
-
-        (new Migachat_Model_Webservicelogs())->addData($data)->save();
-
-        return $data;
-    }
-
-    /**
-     * Validates the presence of mandatory request parameters.
-     *
-     * @param array $params
-     * @param array $ws_log_data
-     *
-     * @return array|null
-     */
-    private function validateRequiredParams(array $params, array &$ws_log_data)
-    {
-        $requiredParams   = ['instance_id', 'message', 'auth_token'];
-        $missing_messages = [];
-
-        foreach ($requiredParams as $param) {
-            if (! isset($params[$param]) || $params[$param] === '') {
-                $missing_messages[] = " Missing required parameter: $param <br>";
-                continue;
-            }
-
-            $ws_log_data[$param] = $params[$param];
-        }
-
-        if (empty($missing_messages)) {
-            return null;
-        }
-
-        $missing_params = implode('', $missing_messages);
-        $this->logBridgeApiError($ws_log_data, $missing_params);
-
-        return [
-            'status'  => 'failure',
-            'message' => $missing_params,
-        ];
-    }
-
-    /**
-     * Extracts and validates the incoming request payload.
-     *
-     * @throws Exception
-     */
-    private function extractRequestParams()
-    {
-        $request = $this->getRequest();
-
-        $rawBody = trim((string) $request->getRawBody());
-        if ($rawBody !== '') {
-            $post_params = json_decode($rawBody, true);
-
-            if (! is_array($post_params)) {
-                throw new Exception(p__("Migachat", 'Invalid request format'), 1);
-            }
-
-            return $post_params;
-        }
-
-        return $request->getParams();
-    }
-
-    /**
-     * Normalizes a list of comma/semicolon/newline separated phone numbers into a clean array.
-     *
-     * @param string|array|null $numbers
-     *
-     * @return array
-     */
-    private function normalizeNumberList($numbers)
-    {
-        if (! $numbers) {
-            return [];
-        }
-
-        if (! is_array($numbers)) {
-            $numbers = str_replace([';', "\r\n", "\n", "\r"], ',', $numbers);
-            $numbers = preg_split('/[,\s]+/', $numbers);
-        }
-
-        if (! is_array($numbers)) {
-            return [];
-        }
-
-        $numbers = array_map(static function ($item) {
-            return trim($item);
-        }, $numbers);
-
-        return array_values(array_filter($numbers, static function ($item) {
-            return $item !== '';
-        }));
     }
 
 }
