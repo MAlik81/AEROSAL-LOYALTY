@@ -681,7 +681,25 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                         $bridge_chat_obj = new Migachat_Model_BridgeAPI();
                         $chat_id         = $bridge_chat_obj->getNewChatId($value_id); // already updated to chat_ids table
                     }
-                    $chat_id_data['chat_id'] = $chat_id;
+                    $chat_id_data['chat_id']  = $chat_id;
+                    $chat_id_data['value_id'] = $value_id;
+
+                    $chatIdentityContext = $this->prepareChatIdentity(
+                        $params,
+                        $app_setting_obj,
+                        $setting_obj,
+                        $chat_id_data,
+                        $openai
+                    );
+
+                    $contactInfo = $chatIdentityContext['contact'];
+                    $channel     = $chatIdentityContext['channel'];
+                    $email       = $contactInfo['email'] ?? '';
+                    $mobile      = $contactInfo['mobile'] ?? '';
+                    if (! empty($contactInfo['name'])) {
+                        $name = $contactInfo['name'];
+                    }
+                    $thread_id = $chatIdentityContext['thread_id'];
 
                     $check_ai_limit_duration = $this->checkAILimmitDuration($value_id, $chat_id);
                     $bridge_chatid_tokens    = (new Migachat_Model_BridgeAPI())->getChatIdTokens($value_id, $chatid_duration, $chat_id);
@@ -718,57 +736,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                         'content' => "Translate the user-provided text into `$global_lang`. If the detected language of the text is already `$global_lang`, return the original text exactly as it is, without translating. Ensure that the translation preserves the original meaning, tone, and context as closely as possible. The output should consist only of the translated (or unchanged) text, with no additional content, explanations, or responses included. If the language cannot be detected, default to returning the original text without any modifications.",
                     ];
 
-                    $mobile = '';
-                    if (isset($params['mobile'])) {
-                        $mobile = trim($params['mobile']);
-
-                        // Define the regular expression pattern for validation
-                        $pattern = '/^\+[0-9]{9,}$/';
-
-                        // Use the preg_match function to check if the mobile number matches the pattern
-                        if (! preg_match($pattern, $mobile)) {
-                            $error_message = p__("Migachat", 'Invalide mobile number format') . ' ' . $mobile;
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                $error_message
-                            );
-                            throw new Exception(p__("Migachat", 'Invalide mobile number format'), 1);
-                        }
-
-                        $chat_id_data['user_mobile'] = $mobile;
-
-                        $setting = new Migachat_Model_Setting();
-                        $setting->find(1);
-
-                        $global_blacklisted_numbers = $this->normalizeNumberList($setting->getBlacklistedNumbers());
-                        if (! empty($global_blacklisted_numbers) && in_array($mobile, $global_blacklisted_numbers, true)) {
-                            $error_message = p__("Migachat", 'Mobile number is blacklisted') . ' ' . $mobile;
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                $error_message
-                            );
-                            throw new Exception(p__("Migachat", 'Mobile number is blacklisted'), 1);
-                        }
-
-                        $permanent_blacklisted_numbers = $this->normalizeNumberList($app_setting_obj->getPermanentBlacklistedMobileNumbers());
-                        if (! empty($permanent_blacklisted_numbers) && in_array($mobile, $permanent_blacklisted_numbers, true)) {
-                            $error_message = p__("Migachat", 'Mobile number is blacklisted') . ' ' . $mobile;
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                $error_message
-                            );
-                            throw new Exception(p__("Migachat", 'Mobile number is blacklisted'), 1);
-                        }
-                    }
                     $chatLimitResult = $this->handleChatLimits([
                         'value_id'                        => $value_id,
                         'chat_id'                         => $chat_id,
@@ -792,90 +759,10 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                     }
 
                     $chat_id_data_exists = $chatLimitResult['limit_state']['chat_id_record'];
-
-                    $channel          = '';
-                    $allowed_channels = ['APP', 'WHATSAPP', 'TELEGRAM', 'MESSENGER', 'WEB', 'EMAIL', 'FB', 'INSTAGRAM', 'LINKEDIN', 'OTHER'];
-                    if (isset($params['channel'])) {
-                        $channel = strtoupper($params['channel']);
-                        if (! in_array($channel, $allowed_channels)) {
-                            $error_message = p__("Migachat", 'Channel not allowed') . $channel;
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                $error_message
-                            );
-                            throw new Exception(p__("Migachat", 'Channel not allowed'), 1);
-                        }
-
-                    } else {
-                        $channel           = 'WEB';
-                        $params['channel'] = $channel;
+                    if (! $chat_id_data_exists->getId()) {
+                        $chat_id_data_exists = $chatIdentityContext['chat_id_entity'];
                     }
-
-                    $email = '';
-                    if (isset($params['email'])) {
-                        $email = $params['email']; // Replace with the email address you want to validate
-
-                        // Define the regular expression pattern for email validation
-                        $pattern = '/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/';
-
-                        // Use the preg_match function to check if the email matches the pattern
-                        if (! preg_match($pattern, $email)) {
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'customer_id' => $chat_id,
-                                ],
-                                p__("Migachat", 'Invalide email format')
-                            );
-                            throw new Exception(p__("Migachat", 'Invalide Email format'), 1);
-                        }
-                        $chat_id_data['user_email'] = $email;
-
-                    }
-
-                    $chat_id_data['value_id'] = $value_id;
-
-                    if (! $chat_id_data_exists || ! $chat_id_data_exists->getId()) {
-                        $chat_id_data['created_at'] = date('Y-m-d H:i:s');
-                        $chat_id_data_exists        = (new Migachat_Model_ModelChatIds())->addData($chat_id_data)->save();
-                    } else {
-                        $chat_id_data['id'] = $chat_id_data_exists->getId();
-
-                        $chat_id_data_exists = (new Migachat_Model_ModelChatIds())->addData($chat_id_data)->save();
-                    }
-                    // get thread id if not exists create a new thread only if chatbot setting is enabled for assistant
-                    $thread_id = $chat_id_data_exists->getThreadId();
-                    if (empty($thread_id) && $setting_obj->getUseAssistant() == "1") {
-                        $meta_data               = [];
-                        $meta_data['value_id']   = (string) $value_id;
-                        $meta_data['chat_id']    = (string) $chat_id;
-                        $meta_data['created_at'] = date('Y-m-d H:i:s');
-                        $new_thread              = $openai->createThread($meta_data);
-                        // dd($new_thread);
-                        // {
-                        //     "id": "thread_abc123",
-                        //     "object": "thread",
-                        //     "created_at": 1629470000,
-                        //     "metadata": {"user_id": "12345"},
-                        //     "messages": [
-                        //         {
-                        //         "id": "msg_123",
-                        //         "role": "user",
-                        //         "content": "What's the weather today?"
-                        //         }
-                        //     ]
-                        // }
-                        if (isset($new_thread['id']) && ! empty($new_thread['id'])) {
-                            $thread_id = $new_thread['id'];
-                            $chat_id_data_exists->setThreadId($thread_id)->save();
-                        } else {
-                            throw new Exception(p__("Migachat", 'Failed to create a new thread. Please try again later.'));
-                        }
-
-                    }
+                    $thread_id = $chat_id_data_exists->getThreadId() ?: $thread_id;
 
                     $system_channel_prompt = "The last message sent by the user was received from $channel";
 
@@ -2139,6 +2026,165 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
      *
      * @return array{payload: array|null, limit_state: array}
      */
+    private function prepareChatIdentity(
+        array $params,
+        Migachat_Model_PromptSettings $promptSettings,
+        Migachat_Model_ChatbotSettings $chatbotSettings,
+        array $chatIdData,
+        $assistantsApi = null
+    ) {
+        $valueId = $chatIdData['value_id'] ?? null;
+        $chatId  = $chatIdData['chat_id'] ?? null;
+
+        if (! $valueId || ! $chatId) {
+            throw new Exception(p__("Migachat", 'Missing chat identity context.'));
+        }
+
+        $allowedChannels = ['APP', 'WHATSAPP', 'TELEGRAM', 'MESSENGER', 'WEB', 'EMAIL', 'FB', 'INSTAGRAM', 'LINKEDIN', 'OTHER'];
+        $channel         = 'WEB';
+        if (! empty($params['channel'])) {
+            $normalizedChannel = strtoupper(trim($params['channel']));
+            if (! in_array($normalizedChannel, $allowedChannels, true)) {
+                $error_message = p__("Migachat", 'Channel not allowed') . $normalizedChannel;
+                $this->logBridgeApiError(
+                    [
+                        'value_id'    => $valueId,
+                        'customer_id' => $chatId,
+                    ],
+                    $error_message
+                );
+                throw new Exception(p__("Migachat", 'Channel not allowed'), 1);
+            }
+            $channel = $normalizedChannel;
+        }
+
+        $email = '';
+        if (! empty($params['email'])) {
+            $email   = trim($params['email']);
+            $pattern = '/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/';
+            if (! preg_match($pattern, $email)) {
+                $this->logBridgeApiError(
+                    [
+                        'value_id'    => $valueId,
+                        'customer_id' => $chatId,
+                    ],
+                    p__("Migachat", 'Invalide email format')
+                );
+                throw new Exception(p__("Migachat", 'Invalide Email format'), 1);
+            }
+        }
+
+        $mobile = '';
+        if (! empty($params['mobile'])) {
+            $mobile  = trim($params['mobile']);
+            $pattern = '/^\+[0-9]{9,}$/';
+            if (! preg_match($pattern, $mobile)) {
+                $error_message = p__("Migachat", 'Invalide mobile number format') . ' ' . $mobile;
+                $this->logBridgeApiError(
+                    [
+                        'value_id'    => $valueId,
+                        'customer_id' => $chatId,
+                    ],
+                    $error_message
+                );
+                throw new Exception(p__("Migachat", 'Invalide mobile number format'), 1);
+            }
+
+            $setting = new Migachat_Model_Setting();
+            $setting->find(1);
+
+            $global_blacklisted_numbers = $this->normalizeNumberList($setting->getBlacklistedNumbers());
+            if (! empty($global_blacklisted_numbers) && in_array($mobile, $global_blacklisted_numbers, true)) {
+                $error_message = p__("Migachat", 'Mobile number is blacklisted') . ' ' . $mobile;
+                $this->logBridgeApiError(
+                    [
+                        'value_id'    => $valueId,
+                        'customer_id' => $chatId,
+                    ],
+                    $error_message
+                );
+                throw new Exception(p__("Migachat", 'Mobile number is blacklisted'), 1);
+            }
+
+            $permanent_blacklisted_numbers = $this->normalizeNumberList($promptSettings->getPermanentBlacklistedMobileNumbers());
+            if (! empty($permanent_blacklisted_numbers) && in_array($mobile, $permanent_blacklisted_numbers, true)) {
+                $error_message = p__("Migachat", 'Mobile number is blacklisted') . ' ' . $mobile;
+                $this->logBridgeApiError(
+                    [
+                        'value_id'    => $valueId,
+                        'customer_id' => $chatId,
+                    ],
+                    $error_message
+                );
+                throw new Exception(p__("Migachat", 'Mobile number is blacklisted'), 1);
+            }
+        }
+
+        $existingChatIdentity = (new Migachat_Model_ModelChatIds())->find([
+            'value_id' => $valueId,
+            'chat_id'  => $chatId,
+        ]);
+
+        $name = isset($chatIdData['user_name']) ? trim((string) $chatIdData['user_name']) : '';
+
+        $upsertData = [
+            'value_id' => $valueId,
+            'chat_id'  => $chatId,
+        ];
+
+        if ($name !== '') {
+            $upsertData['user_name'] = $name;
+        }
+
+        if ($email !== '') {
+            $upsertData['user_email'] = $email;
+        }
+
+        if ($mobile !== '') {
+            $upsertData['user_mobile'] = $mobile;
+        }
+
+        if ($existingChatIdentity->getId()) {
+            $upsertData['id'] = $existingChatIdentity->getId();
+        } else {
+            $upsertData['created_at'] = date('Y-m-d H:i:s');
+        }
+
+        $chatIdEntity = (new Migachat_Model_ModelChatIds())->addData($upsertData)->save();
+
+        $threadId = $chatIdEntity->getThreadId();
+        if (empty($threadId) && $chatbotSettings->getUseAssistant() == "1" && $assistantsApi) {
+            $meta_data = [
+                'value_id'   => (string) $valueId,
+                'chat_id'    => (string) $chatId,
+                'created_at' => date('Y-m-d H:i:s'),
+            ];
+
+            $new_thread = $assistantsApi->createThread($meta_data);
+            if (isset($new_thread['id']) && ! empty($new_thread['id'])) {
+                $threadId = $new_thread['id'];
+                $chatIdEntity->setThreadId($threadId)->save();
+            } else {
+                throw new Exception(p__("Migachat", 'Failed to create a new thread. Please try again later.'));
+            }
+        }
+
+        $resolvedEmail  = $email !== '' ? $email : $chatIdEntity->getUserEmail();
+        $resolvedMobile = $mobile !== '' ? $mobile : $chatIdEntity->getUserMobile();
+        $resolvedName   = $name !== '' ? $name : trim((string) $chatIdEntity->getUserName());
+
+        return [
+            'channel'        => $channel,
+            'contact'        => [
+                'email'  => $resolvedEmail,
+                'mobile' => $resolvedMobile,
+                'name'   => $resolvedName,
+            ],
+            'chat_id_entity' => $chatIdEntity,
+            'thread_id'      => $threadId,
+        ];
+    }
+
     private function handleChatLimits(array $context)
     {
         $valueId          = $context['value_id'];
