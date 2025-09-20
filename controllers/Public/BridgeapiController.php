@@ -609,12 +609,13 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         try {
 
             $ai_awnser_prepend = '';
-            // Extract incoming request and validate parameters.
-            $params = $this->extractRequestParams();
 
-            // Initialize an array to store log data for webservice
-            $ws_log_data  = [];
-            $chat_id_data = [];
+            // Extract incoming request details and bootstrap controller state.
+            $requestContext = $this->initializeRequestContext();
+            $params         = $requestContext['params'];
+            $ws_log_data    = $requestContext['ws_log_data'];
+            $chat_id_data   = $requestContext['chat_id_data'];
+
 
             $missingParamsResponse = $this->validateRequiredParams($params, $ws_log_data);
             if ($missingParamsResponse) {
@@ -2237,6 +2238,25 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         return $responce;
     }
 
+
+    private function initializeRequestContext()
+    {
+        $params = $this->extractRequestParams();
+
+        $ws_log_data = [];
+        foreach (['instance_id', 'message', 'auth_token'] as $field) {
+            if (isset($params[$field])) {
+                $ws_log_data[$field] = $params[$field];
+            }
+        }
+
+        return [
+            'params'       => $params,
+            'ws_log_data'  => $ws_log_data,
+            'chat_id_data' => [],
+        ];
+    }
+
     /**
      * Logs an error entry to the Bridge API webservice log and returns the payload.
      */
@@ -2293,15 +2313,20 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
      */
     private function extractRequestParams()
     {
-        $request     = $this->getRequest();
-        $post_params = json_decode($request->getRawBody(), true);
+        $request = $this->getRequest();
 
-        if (! is_array($post_params)) {
-            throw new Exception(p__("Migachat", 'Invalid request format'), 1);
-        }
+        $rawBody = trim((string) $request->getRawBody());
+        if ($rawBody !== '') {
+            $post_params = json_decode($rawBody, true);
 
-        if ($post_params && isset($post_params['instance_id'])) {
-            return $post_params;
+            if (! is_array($post_params)) {
+                throw new Exception(p__("Migachat", 'Invalid request format'), 1);
+            }
+
+            if ($post_params && isset($post_params['instance_id'])) {
+                return $post_params;
+            }
+
         }
 
         return $request->getParams();
