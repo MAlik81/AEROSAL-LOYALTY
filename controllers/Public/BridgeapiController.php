@@ -620,32 +620,18 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 return $this->_sendJson($missingParamsResponse);
             } else {
                 // Extract parameters
-                $value_id   = $params['instance_id'];
-                $auth_token = $params['auth_token'];
+                $value_id = $params['instance_id'];
 
-                // Retrieve Bridge API settings
-                $bridge_obj = new Migachat_Model_BridgeAPISettings();
-                $bridge_obj->find(['value_id' => $value_id]);
+                // Load Bridge API settings and authenticate the request
+                $instanceContext = $this->resolveInstanceContext($params, $ws_log_data);
+                $bridge_obj      = $instanceContext['settings'];
+                $message         = $instanceContext['message'];
 
-                $message = urldecode($params['message']);
-                // Authenticate using auth token
-                if ($auth_token !== $bridge_obj->getAuthToken() || trim($auth_token) == '') {
-                    $this->logBridgeApiError(
-                        ['value_id' => $value_id],
-                        p__("Migachat", 'Authentication token mismatch')
-                    );
-                    throw new Exception(p__("Migachat", 'Authentication token mismatch'), 1);
-                }
                 // bridge api tokens setup
                 $over_all_duration = ($bridge_obj->getOverallDuration()) ? $bridge_obj->getOverallDuration() : 24;
                 $over_tokens       = ($bridge_obj->getOverallLimit()) ? $bridge_obj->getOverallLimit() : 2500000;
                 $chatid_duration   = ($bridge_obj->getUserDuration()) ? $bridge_obj->getUserDuration() : 60;
                 $chatid_tokens     = ($bridge_obj->getUserLimit()) ? $bridge_obj->getUserLimit() : 100000;
-
-                // check if bridge api is disabled
-                if ($bridge_obj->getDisableApi()) {
-                    throw new Exception(p__("Migachat", 'The service is disabled! Please try again later.'));
-                }
 
                 // if chat id exists than the process of limit ans AI toggle
                 if (isset($params['chat_id']) && $params['chat_id']) {
@@ -2306,6 +2292,94 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             'message' => $missing_params,
         ];
 
+    }
+
+    /**
+     * Loads Bridge API settings, decodes the message, and authenticates the request.
+     *
+     * @param array $params
+     * @param array $ws_log_data
+     *
+     * @return array{settings: Migachat_Model_BridgeAPISettings, message: string}
+     *
+     * @throws Exception When the auth token mismatches or the Bridge API is disabled.
+     */
+    private function resolveInstanceContext(array $params, array $ws_log_data)
+    {
+        $value_id   = $params['instance_id'];
+        $auth_token = $params['auth_token'];
+
+        $bridge_obj = $this->loadBridgeApiSettings($value_id);
+        $message    = $this->decodeIncomingMessage($params);
+        $logContext = $this->buildInstanceLogContext($ws_log_data, $params, $value_id);
+
+        $this->assertValidAuthToken($bridge_obj, $auth_token, $logContext);
+        $this->assertBridgeApiEnabled($bridge_obj, $logContext);
+
+        return [
+            'settings' => $bridge_obj,
+            'message'  => $message,
+        ];
+    }
+
+    /**
+     * Retrieves Bridge API settings for the provided instance.
+     */
+    private function loadBridgeApiSettings($value_id)
+    {
+        $bridge_obj = new Migachat_Model_BridgeAPISettings();
+        $bridge_obj->find(['value_id' => $value_id]);
+
+        return $bridge_obj;
+    }
+
+    /**
+     * Returns the incoming user message decoded from URL encoding.
+     */
+    private function decodeIncomingMessage(array $params)
+    {
+        if (! isset($params['message'])) {
+            return '';
+        }
+
+        return urldecode((string) $params['message']);
+    }
+
+    /**
+     * Ensures the provided authentication token matches the stored secret.
+     */
+    private function assertValidAuthToken(Migachat_Model_BridgeAPISettings $settings, $auth_token, array $logContext)
+    {
+        $expectedToken = $settings->getAuthToken();
+        if ($auth_token !== $expectedToken || trim((string) $auth_token) === '') {
+            $this->logBridgeApiError($logContext, p__("Migachat", 'Authentication token mismatch'));
+            throw new Exception(p__("Migachat", 'Authentication token mismatch'), 1);
+        }
+    }
+
+    /**
+     * Guards access when the Bridge API has been disabled for the instance.
+     */
+    private function assertBridgeApiEnabled(Migachat_Model_BridgeAPISettings $settings, array $logContext)
+    {
+        if ($settings->getDisableApi()) {
+            $this->logBridgeApiError($logContext, p__("Migachat", 'The service is disabled! Please try again later.'));
+            throw new Exception(p__("Migachat", 'The service is disabled! Please try again later.'));
+        }
+    }
+
+    /**
+     * Augments log context with instance-specific details without mutating the source array.
+     */
+    private function buildInstanceLogContext(array $ws_log_data, array $params, $value_id)
+    {
+        if (! isset($ws_log_data['message']) && isset($params['message'])) {
+            $ws_log_data['message'] = $params['message'];
+        }
+
+        $ws_log_data['value_id'] = $value_id;
+
+        return $ws_log_data;
     }
 
     /**
