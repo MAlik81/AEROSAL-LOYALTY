@@ -934,324 +934,45 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                             throw new Exception(p__("Migachat", 'AI is turned off for this chat id.'), 1);
                         }
 
-                        $complete_prompt = "You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.";
-                        if ($app_setting_obj->getSystemPrompt()) {
-                            $complete_prompt = $app_setting_obj->getSystemPrompt() . ' if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.';
-                        }
-                        $complete_prompt .= ' ' . $message . ' ';
+                        $conversationContext = $this->buildConversationContext([
+                            'value_id'                      => $value_id,
+                            'chat_id'                       => $chat_id,
+                            'message'                       => $message,
+                            'name'                          => $name,
+                            'channel'                       => $channel,
+                            'bridge_settings'               => $bridge_obj,
+                            'prompt_settings'               => $app_setting_obj,
+                            'chatbot_settings'              => $setting_obj,
+                            'chat_api'                      => $chatAPI,
+                            'thread_id'                     => $thread_id,
+                            'chat_history_string'           => $chat_history_string,
+                            'two_chat_history_conversation' => $two_chat_history_conversation,
+                            'system_channel_prompt'         => $system_channel_prompt,
+                            'translate_system_prompt'       => $translate_system_prompt,
+                            'gpt_model'                     => $gpt_model,
+                            'api_url'                       => $apiUrl,
+                            'secret_key'                    => $secret_key,
+                            'organization_id'               => $organization_id,
+                        ]);
 
-                        $system_prompt_token_limit = round((new Migachat_Model_ModelTokens())->getSystemPromptTokens($value_id), 0);
-
-                        $history_tokens       = (new Migachat_Model_ModelTokens())->getHistoryTokens($value_id);
-                        $history_tokens_limit = $history_tokens[0] + $system_prompt_token_limit;
-
-                        $history_messages_limit = $history_tokens[1];
-
-                        // Fetch chat history and prepare conversation
-                        $message_sent = 0;
-                        $chat_history = (new Migachat_Model_BridgeAPI())->getHistoryMessages($value_id, $chat_id, $history_messages_limit);
-
-                        $all_conversation             = [];
-                        $bu_all_conversation          = [];
-                        $last_message_max_token_exeed = false;
-                        foreach ($chat_history as $key => $value) {
-                            $complete_prompt .= $value['message_content'];
-                            if ((new Migachat_Model_Setting)->countTokens($complete_prompt) > ($history_tokens_limit - ((5 * $history_tokens_limit) / 100))) {
-                                break;
-                            }
-                            $pattern = '/[^a-zA-Z0-9]+/';
-                            if ($value['role'] == 'user') {
-                                if ($name) {
-                                    $all_conversation[] = [
-                                        'role'    => 'user',
-                                        'name'    => preg_replace($pattern, '-', $name),
-                                        'content' => urldecode($value['message_content']),
-                                    ];
-                                } else {
-
-                                    $all_conversation[] = [
-                                        'role'    => 'user',
-                                        'content' => urldecode($value['message_content']),
-                                    ];
-                                }
-                            } else {
-                                $message_content = $value['message_content'];
-                                if ($key == 0 && $value['max_token_exeed']) {
-                                    $message_content              = str_replace($value['max_token_responce'], ' ', $message_content);
-                                    $last_message_max_token_exeed = true;
-                                }
-                                $all_conversation[] = [
-                                    'role'    => 'assistant',
-                                    'content' => $message_content,
-                                ];
-                            }
-                        }
-
-                        if ($app_setting_obj->getId()) {
-                            if ($app_setting_obj->getPromptChatgptActive()) {
-                                $token_limit = (new Migachat_Model_ModelTokens())->find(['model_name' => $gpt_model])->getTokens();
-                                if (! $token_limit) {
-                                    $k8   = ['gpt-4', 'gpt-4-0613', 'gpt-4-0314', 'code-davinci-002'];
-                                    $k16  = ['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'];
-                                    $k32  = ['gpt-4-32k', 'gpt-4-32k-0613', 'gpt-4-32k-0314', 'code-davinci-002'];
-                                    $k128 = ['gpt-4-1106-preview', 'gpt-4-vision-preview', 'chatgpt-4o-latest', 'gpt-4o-mini-2024-07-18', 'gpt-4o-mini', 'gpt-4o-2024-08-06', 'gpt-4o-2024-05-13', 'gpt-4o'];
-                                    if (in_array($gpt_model, $k8)) {
-                                        $token_limit = 8000;
-                                    } elseif (in_array($gpt_model, $k16)) {
-                                        $token_limit = 16000;
-                                    } elseif (in_array($gpt_model, $k32)) {
-                                        $token_limit = 32000;
-                                    } elseif (in_array($gpt_model, $k128)) {
-                                        $token_limit = 128000;
-                                    } else {
-                                        $token_limit = 4000;
-                                    }
-                                }
-                                $system_prompt = $app_setting_obj->getSystemPrompt();
-                                if ((new Migachat_Model_Setting)->countTokens($system_prompt) < $system_prompt_token_limit) {
-                                    $all_conversation[] = [
-                                        'role'    => 'system',
-                                        'content' => $system_prompt . '. ' . $system_channel_prompt,
-                                    ];
-                                } else {
-                                    $all_conversation[] = [
-                                        'role'    => 'system',
-                                        'content' => 'You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.' . $system_channel_prompt,
-                                    ];
-                                }
-                            } else {
-                                $all_conversation[] = [
-                                    'role'    => 'system',
-                                    'content' => 'You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.' . $system_channel_prompt,
-                                ];
-                            }
-                        } else {
-                            $all_conversation[] = [
-                                'role'    => 'system',
-                                'content' => 'You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.' . $system_channel_prompt,
-                            ];
-                        }
-
-                        $all_conversation_r = array_reverse($all_conversation);
-                        // Initialize and use the ChatGPT API
-                        //getting the responce max_tokens
-                        $max_tokens               = $bridge_obj->getAiAnswerTokenLimit();
-                        $user_max_tokens_responce = 'vuoi che continui?';
-                        $user_max_tokens_responce = $bridge_obj->getAiAnswerTokenLimitMsg();
-                        if ($this->checkPositiveResponce($user_max_tokens_responce, $message, $secret_key, $organization_id) && $last_message_max_token_exeed) {
-                            $message = "continue the responce from where it stoped.";
-                        }
-                        $chatAPI = new Migachat_Model_ChatGPTAPI($apiUrl, $secret_key, $organization_id, $gpt_model);
-
-                        // for assistant / threads or simple chat will manage here
-                        $response = [];
-                        if ($setting_obj->getUseAssistant() == "1") {
-                            $message_to_thread = $openai->addMessageToThread($thread_id, 'user', $message);
-                            // dd($message_to_thread);
-                            if (! isset($message_to_thread['id'])) {
-                                throw new Exception("Failed to add message to thread");
-                            }
-                            $assistant_id = $app_setting_obj->getAssistantId();
-                            if (empty($assistant_id)) {
-                                throw new Exception("Assistant ID is not set in chatbot settings");
-                            }
-
-                            // Migachat_Model_Assistants
-                            $assistant = (new Migachat_Model_Assistants())->find(['assistant_id' => $assistant_id]);
-                            if (! $assistant->getId()) {
-                                throw new Exception("Assistant not found with ID: " . $assistant_id);
-                            }
-                            $file_ids = $assistant->getOpenaiFileIds();
-                            // 3. Run the assistant (with vector store if needed)
-                            $options = is_string($file_ids) ? json_decode($file_ids, true) : ($file_ids ? $file_ids : false);
-                            $extra_instructions = "Language policy: Look at the last 8–10 messages and detect the user’s language, prioritizing the most recent user message. Reply entirely in that language. If messages contain multiple languages, use the language of the latest user message for your main reply and keep any quoted text in its original language. Do not translate code blocks, URLs, error messages, product/brand names, file paths, or quoted snippets.
-                                                    Ambiguity rule: If the latest user message is too short (e.g., fewer than 3 words, or only emojis/stickers/“ok”/“yes”), or if prior history is unreliable (conflicting languages or insufficient context), respond in Italian (IT). If the user later switches language, switch accordingly without comment.";
-                            $opts = [
-                                'truncation_strategy' => [
-                                    'type'          => 'last_messages', // or 'auto'
-                                    'last_messages' => 10,              // keep only the last 8–10 thread messages
-                                ],
-                            ];
-
-                            // If you’re attaching a vector store, include it as you already do:
-                            if ($options) {
-                                $opts['tool_resources'] = [
-                                    'file_search' => [
-                                        'vector_store_ids' => is_string($file_ids) ? json_decode($file_ids, true) : ($file_ids ? $file_ids : [])
-                                    ],
-                                ];
-                            }
-                            $run = $openai->runThread($thread_id, $assistant_id, $opts);
-
-                            // dd($run);
-                            if (! isset($run['id'])) {
-                                // dd($run);
-                                throw new Exception("Failed to initiate assistant run");
-                            }
-                            $run_id = $run['id'];
-
-                                                        // --- 4) Poll for run completion (with requires_action handling) ---
-                            $deadline   = time() + 120; // up to 120s
-                            $run_status = null;
-
-                            while (true) {
-                                                // small backoff
-                                usleep(600000); // 0.6s
-
-                                $status = $openai->getRunStatus($thread_id, $run_id);
-                                if (! isset($status['status'])) {
-                                    throw new Exception("Failed to get run status");
-                                }
-
-                                $run_status = $status['status'];
-
-                                // Handle tool-calls if your assistant can request them
-                                if ($run_status === 'requires_action' && ! empty($status['required_action']['submit_tool_outputs'])) {
-                                    // TODO: build $tool_outputs based on your tools (search, custom, etc.)
-                                    // Example skeleton:
-                                    /*
-        $tool_outputs = [
-            [
-                'tool_call_id' => $status['required_action']['submit_tool_outputs']['tool_calls'][0]['id'],
-                'output'       => '...your tool output here...',
-            ],
-        ];
-        $openai->submitToolOutputs($thread_id, $run_id, ['tool_outputs' => $tool_outputs]);
-        */
-                                    // If you don't support tools yet:
-                                    throw new Exception("Run requires tool outputs, but no tool handler is implemented.");
-                                }
-
-                                if ($run_status === 'completed' || $run_status === 'failed' || $run_status === 'cancelled' || $run_status === 'expired') {
-                                    break;
-                                }
-
-                                if (time() > $deadline) {
-                                    throw new Exception("Run did not complete in time (last status: {$run_status})");
-                                }
-                            }
-                            $promptTokens     = $status['usage']['prompt_tokens'] ?? 0;
-                            $completionTokens = $status['usage']['completion_tokens'] ?? 0;
-                            $totalTokens      = $status['usage']['total_tokens'] ?? 0;
-                            // 5. Retrieve final messages
-                            // 5. Retrieve final messages
-
-                            $messages = $openai->getThreadMessages($thread_id, ['order' => 'desc', 'limit' => 1]);
-                            if (! isset($messages['data'][0])) {
-                                throw new Exception("No messages found in thread");
-                            }
-
-                            $assistant_response = $messages['data'][0]['content'][0]['text']['value'] ?? '[No response content]';
-
-                            $response_msg = '';
-                            $response_msg = str_ireplace("\n", '<br>', $assistant_response);
-                            $response_msg = $this->removeEmojis($response_msg);
-                            $response[0]  = true;
-                            $response[1]  = $response_msg;
-                            $response[2]  = $promptTokens;
-                            $response[3]  = $completionTokens;
-                            $response[4]  = $totalTokens;
-                        } else {
-                            $response = $chatAPI->generateResponse($message, $all_conversation_r, $name, $max_tokens);
-                        }
-
-                        if ($response[0] === true) {
-                            // Log the response and update chat logs
-
-                            $response_msg = str_ireplace("\n", '<br>', $response[1]);
-                            if ($lastInsertId->getId()) {
-                                $chatlog_data                       = [];
-                                $chatlog_data['migachat_bridge_id'] = $lastInsertId->getId();
-                                $chatlog_data['is_sent']            = 1;
-                                $chatlog_data['prompt_tokens']      = $response[2];
-                                $chatlog_data['updated_at']         = date("Y-m-d H:i:s");
-                                $chatlogs_obj->addData($chatlog_data)->save();
-                            }
-                            // check if the message is cut off due to max token limit
-                            $max_token_exeed    = 0;
-                            $max_token_responce = null;
-
-                            if ($max_tokens == $response[3]) {
-                                $chat_history_string .= $message . ' ' . $response_msg;
-
-                                $trl_response = $chatAPI->generateResponse($chat_history_string, $two_chat_history_conversation, 'admin', null);
-
-                                if ($trl_response[0] === true) {
-                                    $language = str_ireplace("\n", '<br>', $trl_response[1]);
-
-                                    $user_max_tokens_responce = "Just give the translation no other text and if the language of text is same than don't translate.Tranlate the text in $language: " . ' ' . $user_max_tokens_responce;
-                                    $translate_response       = $chatAPI->generateResponse($user_max_tokens_responce, $translate_system_prompt, 'admin', null);
-
-                                    $user_max_tokens_responce = str_ireplace("\n", '<br>', $translate_response[1]);
-                                }
-                                $response_msg .= " <br> <br>" . $user_max_tokens_responce;
-                                $max_token_exeed    = 1;
-                                $max_token_responce = $user_max_tokens_responce;
-                            }
-
-                            $chatlog_data = [
-                                'value_id'           => $value_id,
-                                'chat_id'            => $chat_id,
-                                'chatbot_setting_id' => $setting_obj->getId(),
-                                'role'               => 'agent',
-                                'message_content'    => $this->removeEmojis($response_msg),
-                                'completion_tokens'  => $response[3],
-                                'total_tokens'       => $response[4],
-                                'user_email'         => $email,
-                                'user_name'          => $name,
-                                'user_mobile'        => $mobile,
-                                'is_sent'            => 1,
-                                'channel'            => $channel,
-                                'has_error'          => 0,
-                                'is_read'            => 1,
-                                'error_description'  => "",
-                                'max_token_exeed'    => $max_token_exeed,
-                                'max_token_responce' => $max_token_responce,
-                                'created_at'         => date("Y-m-d H:i:s"),
-                                'updated_at'         => date("Y-m-d H:i:s"),
-                            ];
-
-                            $chatlogs_obj = new Migachat_Model_BridgeAPI();
-                            $chatlogs_obj->addData($chatlog_data)->save();
-
-                            $payload = [
-                                'success' => true,
-                                'message' => ($ai_awnser_prepend) ? $ai_awnser_prepend . '<br><br><br><br>' . $this->removeEmojis($response_msg) : $this->removeEmojis($response_msg),
-                                'chat_id' => $chat_id,
-                            ];
-
-                            $error_array                      = [];
-                            $error_array['value_id']          = $value_id;
-                            $error_array['has_error']         = 0;
-                            $error_array['error_description'] = p__("Migachat", 'Get reply successfully.');
-                            $error_array['platform']          = 'Bridge API';
-                            $error_array['message']           = $message;
-                            $error_array['customer_id']       = $chat_id;
-                            $error_array['request']           = serialize($all_conversation_r);
-                            $error_array['responce']          = $response_msg;
-                            $error_array['message_id']        = $lastInsertId->getId();
-                            $error_array['created_at']        = date("Y-m-d");
-                            (new Migachat_Model_Webservicelogs())->addData($error_array)->save();
-
-                        } else {
-                            $payload = [
-                                'success' => false,
-                                'message' => $this->removeEmojis($response[1]),
-                                'chat_id' => $chat_id,
-                            ];
-                            $this->logBridgeApiError(
-                                [
-                                    'value_id'    => $value_id,
-                                    'message'     => $message,
-                                    'customer_id' => $chat_id,
-                                    'message_id'  => $lastInsertId->getId(),
-                                ],
-                                $response[1]
-                            );
-                        }
+                        $payload = $this->generateAndLogAiResponse(
+                            $conversationContext,
+                            [
+                                'openai'            => $openai,
+                                'chatlogs_obj'      => $chatlogs_obj,
+                                'last_insert_id'    => $lastInsertId,
+                                'ai_answer_prepend' => $ai_awnser_prepend,
+                                'value_id'          => $value_id,
+                                'chat_id'           => $chat_id,
+                                'setting_obj'       => $setting_obj,
+                                'email'             => $email,
+                                'name'              => $name,
+                                'mobile'            => $mobile,
+                                'channel'           => $channel,
+                            ]
+                        );
 
                         return $this->_sendJson($payload);
-                        exit;
                     }
                 } else {
                     $this->logBridgeApiError(
@@ -2089,6 +1810,391 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             'chat_id_entity' => $chatIdEntity,
             'thread_id'      => $threadId,
         ];
+    }
+
+    /**
+     * Build the conversation payload and metadata required for OpenAI calls.
+     */
+    private function buildConversationContext(array $context)
+    {
+        $valueId        = $context['value_id'] ?? null;
+        $chatId         = $context['chat_id'] ?? null;
+        $originalMsg    = (string) ($context['message'] ?? '');
+        $name           = isset($context['name']) ? (string) $context['name'] : '';
+        $channel        = isset($context['channel']) ? (string) $context['channel'] : '';
+        $bridgeSettings = $context['bridge_settings'] ?? null;
+        $promptSettings = $context['prompt_settings'] ?? null;
+        $chatbotSettings = $context['chatbot_settings'] ?? null;
+        $chatApi        = $context['chat_api'] ?? null;
+        $threadId       = $context['thread_id'] ?? null;
+        $systemChannelPrompt = (string) ($context['system_channel_prompt'] ?? '');
+        $gptModel            = $context['gpt_model'] ?? 'gpt-4o-mini';
+        $apiUrl              = $context['api_url'] ?? '';
+        $secretKey           = $context['secret_key'] ?? '';
+        $organizationId      = $context['organization_id'] ?? '';
+
+        $chatHistoryString           = $context['chat_history_string'] ?? '';
+        $twoChatHistoryConversation  = $context['two_chat_history_conversation'] ?? [];
+        $translateSystemPrompt       = $context['translate_system_prompt'] ?? [];
+
+        if (! $chatApi instanceof Migachat_Model_ChatGPTAPI) {
+            $chatApi = new Migachat_Model_ChatGPTAPI($apiUrl, $secretKey, $organizationId, $gptModel);
+        }
+
+        $completePrompt = "You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.";
+        if ($promptSettings && $promptSettings->getSystemPrompt()) {
+            $completePrompt = $promptSettings->getSystemPrompt() . ' if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.';
+        }
+        $completePrompt .= ' ' . $originalMsg . ' ';
+
+        $systemPromptTokenLimit = round((new Migachat_Model_ModelTokens())->getSystemPromptTokens($valueId), 0);
+        $historyTokens          = (new Migachat_Model_ModelTokens())->getHistoryTokens($valueId);
+        $historyTokensLimit     = $historyTokens[0] + $systemPromptTokenLimit;
+        $historyMessagesLimit   = $historyTokens[1];
+
+        $chatHistory = (new Migachat_Model_BridgeAPI())->getHistoryMessages($valueId, $chatId, $historyMessagesLimit);
+
+        $allConversation            = [];
+        $lastMessageMaxTokenExceeded = false;
+        foreach ($chatHistory as $key => $entry) {
+            $completePrompt .= $entry['message_content'];
+            if ((new Migachat_Model_Setting())->countTokens($completePrompt) > ($historyTokensLimit - ((5 * $historyTokensLimit) / 100))) {
+                break;
+            }
+
+            $pattern = '/[^a-zA-Z0-9]+/';
+            if ($entry['role'] == 'user') {
+                if ($name !== '') {
+                    $allConversation[] = [
+                        'role'    => 'user',
+                        'name'    => preg_replace($pattern, '-', $name),
+                        'content' => urldecode($entry['message_content']),
+                    ];
+                } else {
+                    $allConversation[] = [
+                        'role'    => 'user',
+                        'content' => urldecode($entry['message_content']),
+                    ];
+                }
+            } else {
+                $messageContent = $entry['message_content'];
+                if ($key == 0 && $entry['max_token_exeed']) {
+                    $messageContent             = str_replace($entry['max_token_responce'], ' ', $messageContent);
+                    $lastMessageMaxTokenExceeded = true;
+                }
+                $allConversation[] = [
+                    'role'    => 'assistant',
+                    'content' => $messageContent,
+                ];
+            }
+        }
+
+        if ($promptSettings && $promptSettings->getId()) {
+            if ($promptSettings->getPromptChatgptActive()) {
+                $tokenLimit = (new Migachat_Model_ModelTokens())->find(['model_name' => $gptModel])->getTokens();
+                if (! $tokenLimit) {
+                    $k8   = ['gpt-4', 'gpt-4-0613', 'gpt-4-0314', 'code-davinci-002'];
+                    $k16  = ['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'];
+                    $k32  = ['gpt-4-32k', 'gpt-4-32k-0613', 'gpt-4-32k-0314', 'code-davinci-002'];
+                    $k128 = ['gpt-4-1106-preview', 'gpt-4-vision-preview', 'chatgpt-4o-latest', 'gpt-4o-mini-2024-07-18', 'gpt-4o-mini', 'gpt-4o-2024-08-06', 'gpt-4o-2024-05-13', 'gpt-4o'];
+                    if (in_array($gptModel, $k8)) {
+                        $tokenLimit = 8000;
+                    } elseif (in_array($gptModel, $k16)) {
+                        $tokenLimit = 16000;
+                    } elseif (in_array($gptModel, $k32)) {
+                        $tokenLimit = 32000;
+                    } elseif (in_array($gptModel, $k128)) {
+                        $tokenLimit = 128000;
+                    } else {
+                        $tokenLimit = 4000;
+                    }
+                }
+
+                $systemPrompt = $promptSettings->getSystemPrompt();
+                if ((new Migachat_Model_Setting())->countTokens($systemPrompt) < $systemPromptTokenLimit) {
+                    $allConversation[] = [
+                        'role'    => 'system',
+                        'content' => $systemPrompt . '. ' . $systemChannelPrompt,
+                    ];
+                } else {
+                    $allConversation[] = [
+                        'role'    => 'system',
+                        'content' => 'You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.' . $systemChannelPrompt,
+                    ];
+                }
+            } else {
+                $allConversation[] = [
+                    'role'    => 'system',
+                    'content' => 'You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.' . $systemChannelPrompt,
+                ];
+            }
+        } else {
+            $allConversation[] = [
+                'role'    => 'system',
+                'content' => 'You are a helpful assistant. if the answer include a link add always the complete url starting with https://. Use the name of customer sending in prompt of role user.' . $systemChannelPrompt,
+            ];
+        }
+
+        $allConversationReversed = array_reverse($allConversation);
+
+        $maxTokens               = $bridgeSettings ? $bridgeSettings->getAiAnswerTokenLimit() : null;
+        $userMaxTokensResponse   = $bridgeSettings ? $bridgeSettings->getAiAnswerTokenLimitMsg() : 'vuoi che continui?';
+        $preparedMessage         = $originalMsg;
+
+        if ($this->checkPositiveResponce($userMaxTokensResponse, $originalMsg, $secretKey, $organizationId) && $lastMessageMaxTokenExceeded) {
+            $preparedMessage = "continue the responce from where it stoped.";
+        }
+
+        $assistantContext = [
+            'use_assistant' => ($chatbotSettings && $chatbotSettings->getUseAssistant() == "1"),
+            'thread_id'     => $threadId,
+        ];
+
+        if ($assistantContext['use_assistant']) {
+            $assistantId = $promptSettings ? $promptSettings->getAssistantId() : null;
+            if (empty($assistantId)) {
+                throw new Exception("Assistant ID is not set in chatbot settings");
+            }
+
+            $assistant = (new Migachat_Model_Assistants())->find(['assistant_id' => $assistantId]);
+            if (! $assistant->getId()) {
+                throw new Exception("Assistant not found with ID: " . $assistantId);
+            }
+
+            $fileIds = $assistant->getOpenaiFileIds();
+            $options = is_string($fileIds) ? json_decode($fileIds, true) : ($fileIds ? $fileIds : false);
+            $opts    = [
+                'truncation_strategy' => [
+                    'type'          => 'last_messages',
+                    'last_messages' => 10,
+                ],
+            ];
+
+            if ($options) {
+                $opts['tool_resources'] = [
+                    'file_search' => [
+                        'vector_store_ids' => is_string($fileIds) ? json_decode($fileIds, true) : ($fileIds ? $fileIds : []),
+                    ],
+                ];
+            }
+
+            $assistantContext['assistant_id']        = $assistantId;
+            $assistantContext['assistant_options']   = $options;
+            $assistantContext['assistant_run_opts']  = $opts;
+        }
+
+        $context['chat_api']                      = $chatApi;
+        $context['conversation']                  = $allConversationReversed;
+        $context['prepared_message']              = $preparedMessage;
+        $context['message']                       = $preparedMessage;
+        $context['max_tokens']                    = $maxTokens;
+        $context['user_max_tokens_responce']      = $userMaxTokensResponse;
+        $context['last_message_max_token_exeed']  = $lastMessageMaxTokenExceeded;
+        $context['assistant_context']             = $assistantContext;
+        $context['translate_system_prompt']       = $translateSystemPrompt;
+        $context['chat_history_string']           = $chatHistoryString;
+        $context['two_chat_history_conversation'] = $twoChatHistoryConversation;
+        $context['name']                          = $name;
+        $context['channel']                       = $channel;
+
+        return $context;
+    }
+
+    /**
+     * Execute the OpenAI request, update chat logs, and build the final payload.
+     */
+    private function generateAndLogAiResponse(array $conversationContext, array $executionContext)
+    {
+        $chatApi      = $conversationContext['chat_api'] ?? null;
+        $preparedMsg  = (string) ($conversationContext['prepared_message'] ?? $conversationContext['message'] ?? '');
+        $name         = isset($conversationContext['name']) ? (string) $conversationContext['name'] : '';
+        $maxTokens    = $conversationContext['max_tokens'] ?? null;
+        $conversation = $conversationContext['conversation'] ?? [];
+
+        if (! $chatApi instanceof Migachat_Model_ChatGPTAPI) {
+            throw new Exception('Chat API client is not available');
+        }
+
+        $response          = [];
+        $assistantContext  = $conversationContext['assistant_context'] ?? [];
+        $useAssistant      = ! empty($assistantContext['use_assistant']);
+        $threadId          = $assistantContext['thread_id'] ?? null;
+        $openai            = $executionContext['openai'] ?? null;
+
+        if ($useAssistant) {
+            if (! $openai) {
+                throw new Exception('Assistants API client is not available');
+            }
+
+            $messageToThread = $openai->addMessageToThread($threadId, 'user', $preparedMsg);
+            if (! isset($messageToThread['id'])) {
+                throw new Exception('Failed to add message to thread');
+            }
+
+            $assistantId = $assistantContext['assistant_id'] ?? null;
+            if (empty($assistantId)) {
+                throw new Exception('Assistant ID is not set in chatbot settings');
+            }
+
+            $opts = $assistantContext['assistant_run_opts'] ?? [];
+            $run  = $openai->runThread($threadId, $assistantId, $opts);
+            if (! isset($run['id'])) {
+                throw new Exception('Failed to initiate assistant run');
+            }
+
+            $runId     = $run['id'];
+            $deadline  = time() + 120;
+            $runStatus = null;
+
+            while (true) {
+                usleep(600000);
+
+                $status = $openai->getRunStatus($threadId, $runId);
+                if (! isset($status['status'])) {
+                    throw new Exception('Failed to get run status');
+                }
+
+                $runStatus = $status['status'];
+
+                if ($runStatus === 'requires_action' && ! empty($status['required_action']['submit_tool_outputs'])) {
+                    throw new Exception('Run requires tool outputs, but no tool handler is implemented.');
+                }
+
+                if (in_array($runStatus, ['completed', 'failed', 'cancelled', 'expired'])) {
+                    break;
+                }
+
+                if (time() > $deadline) {
+                    throw new Exception("Run did not complete in time (last status: {$runStatus})");
+                }
+            }
+
+            $promptTokens     = $status['usage']['prompt_tokens'] ?? 0;
+            $completionTokens = $status['usage']['completion_tokens'] ?? 0;
+            $totalTokens      = $status['usage']['total_tokens'] ?? 0;
+
+            $messages = $openai->getThreadMessages($threadId, ['order' => 'desc', 'limit' => 1]);
+            if (! isset($messages['data'][0])) {
+                throw new Exception('No messages found in thread');
+            }
+
+            $assistantResponse = $messages['data'][0]['content'][0]['text']['value'] ?? '[No response content]';
+
+            $responseMsg = $this->removeEmojis(str_ireplace("\n", '<br>', $assistantResponse));
+            $response    = [true, $responseMsg, $promptTokens, $completionTokens, $totalTokens];
+        } else {
+            $response = $chatApi->generateResponse($preparedMsg, $conversation, $name, $maxTokens);
+        }
+
+        $valueId       = $executionContext['value_id'] ?? ($conversationContext['value_id'] ?? null);
+        $chatId        = $executionContext['chat_id'] ?? ($conversationContext['chat_id'] ?? null);
+        $settingObj    = $executionContext['setting_obj'] ?? ($conversationContext['chatbot_settings'] ?? null);
+        $email         = isset($executionContext['email']) ? $executionContext['email'] : '';
+        $contactName   = isset($executionContext['name']) ? $executionContext['name'] : $name;
+        $mobile        = isset($executionContext['mobile']) ? $executionContext['mobile'] : '';
+        $channel       = isset($executionContext['channel']) ? $executionContext['channel'] : ($conversationContext['channel'] ?? '');
+        $aiPrepend     = $executionContext['ai_answer_prepend'] ?? '';
+        $lastInsertId  = $executionContext['last_insert_id'] ?? null;
+        $chatlogsObj   = $executionContext['chatlogs_obj'] ?? null;
+
+        if ($response[0] !== true) {
+            $payload = [
+                'success' => false,
+                'message' => $this->removeEmojis($response[1]),
+                'chat_id' => $chatId,
+            ];
+
+            $this->logBridgeApiError(
+                [
+                    'value_id'    => $valueId,
+                    'message'     => $preparedMsg,
+                    'customer_id' => $chatId,
+                    'message_id'  => ($lastInsertId && method_exists($lastInsertId, 'getId')) ? $lastInsertId->getId() : null,
+                ],
+                $response[1]
+            );
+
+            return $payload;
+        }
+
+        $responseMsg = str_ireplace("\n", '<br>', $response[1]);
+        if ($lastInsertId && method_exists($lastInsertId, 'getId') && $lastInsertId->getId() && $chatlogsObj) {
+            $chatlogsObj->addData([
+                'migachat_bridge_id' => $lastInsertId->getId(),
+                'is_sent'            => 1,
+                'prompt_tokens'      => $response[2],
+                'updated_at'         => date('Y-m-d H:i:s'),
+            ])->save();
+        }
+
+        $maxTokenExceeded   = 0;
+        $maxTokenResponse   = null;
+        $userMaxTokensReply = $conversationContext['user_max_tokens_responce'] ?? '';
+
+        if ($maxTokens == $response[3]) {
+            $chatHistoryString          = $conversationContext['chat_history_string'] ?? '';
+            $twoChatHistoryConversation = $conversationContext['two_chat_history_conversation'] ?? [];
+            $chatHistoryString         .= $preparedMsg . ' ' . $responseMsg;
+
+            $trlResponse = $chatApi->generateResponse($chatHistoryString, $twoChatHistoryConversation, 'admin', null);
+
+            if ($trlResponse[0] === true) {
+                $language = str_ireplace("\n", '<br>', $trlResponse[1]);
+
+                $userMaxTokensReply = "Just give the translation no other text and if the language of text is same than don't translate.Tranlate the text in $language: " . ' ' . $userMaxTokensReply;
+                $translateResponse  = $chatApi->generateResponse($userMaxTokensReply, $conversationContext['translate_system_prompt'] ?? [], 'admin', null);
+
+                $userMaxTokensReply = str_ireplace("\n", '<br>', $translateResponse[1]);
+            }
+            $responseMsg       .= " <br> <br>" . $userMaxTokensReply;
+            $maxTokenExceeded   = 1;
+            $maxTokenResponse   = $userMaxTokensReply;
+        }
+
+        $chatlogData = [
+            'value_id'           => $valueId,
+            'chat_id'            => $chatId,
+            'chatbot_setting_id' => ($settingObj) ? $settingObj->getId() : null,
+            'role'               => 'agent',
+            'message_content'    => $this->removeEmojis($responseMsg),
+            'completion_tokens'  => $response[3],
+            'total_tokens'       => $response[4],
+            'user_email'         => $email,
+            'user_name'          => $contactName,
+            'user_mobile'        => $mobile,
+            'is_sent'            => 1,
+            'channel'            => $channel,
+            'has_error'          => 0,
+            'is_read'            => 1,
+            'error_description'  => '',
+            'max_token_exeed'    => $maxTokenExceeded,
+            'max_token_responce' => $maxTokenResponse,
+            'created_at'         => date('Y-m-d H:i:s'),
+            'updated_at'         => date('Y-m-d H:i:s'),
+        ];
+
+        (new Migachat_Model_BridgeAPI())->addData($chatlogData)->save();
+
+        $payload = [
+            'success' => true,
+            'message' => ($aiPrepend) ? $aiPrepend . '<br><br><br><br>' . $this->removeEmojis($responseMsg) : $this->removeEmojis($responseMsg),
+            'chat_id' => $chatId,
+        ];
+
+        $errorArray                      = [];
+        $errorArray['value_id']          = $valueId;
+        $errorArray['has_error']         = 0;
+        $errorArray['error_description'] = p__("Migachat", 'Get reply successfully.');
+        $errorArray['platform']          = 'Bridge API';
+        $errorArray['message']           = $preparedMsg;
+        $errorArray['customer_id']       = $chatId;
+        $errorArray['request']           = serialize($conversation);
+        $errorArray['responce']          = $responseMsg;
+        $errorArray['message_id']        = ($lastInsertId && method_exists($lastInsertId, 'getId')) ? $lastInsertId->getId() : null;
+        $errorArray['created_at']        = date('Y-m-d');
+        (new Migachat_Model_Webservicelogs())->addData($errorArray)->save();
+
+        return $payload;
     }
 
     private function handleOperatorEscalation(array $context)
