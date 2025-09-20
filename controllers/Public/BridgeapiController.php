@@ -609,6 +609,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         try {
 
             $ai_awnser_prepend = '';
+
             // Extract incoming request details and bootstrap controller state.
             $requestContext = $this->initializeRequestContext();
             $params         = $requestContext['params'];
@@ -2305,6 +2306,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             'status'  => 'failure',
             'message' => $missing_params,
         ];
+
     }
 
     /**
@@ -2325,6 +2327,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             }
 
             return $post_params;
+
         }
 
         return $request->getParams();
