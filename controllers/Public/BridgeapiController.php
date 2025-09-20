@@ -628,36 +628,15 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 $message         = $instanceContext['message'];
 
                 // bridge api tokens setup
-                $over_all_duration = ($bridge_obj->getOverallDuration()) ? $bridge_obj->getOverallDuration() : 24;
-                $over_tokens       = ($bridge_obj->getOverallLimit()) ? $bridge_obj->getOverallLimit() : 2500000;
-                $chatid_duration   = ($bridge_obj->getUserDuration()) ? $bridge_obj->getUserDuration() : 60;
-                $chatid_tokens     = ($bridge_obj->getUserLimit()) ? $bridge_obj->getUserLimit() : 100000;
+                $chatid_duration = ($bridge_obj->getUserDuration()) ? $bridge_obj->getUserDuration() : 60;
+                $chatid_tokens   = ($bridge_obj->getUserLimit()) ? $bridge_obj->getUserLimit() : 100000;
 
                 $chatControlPayload = $this->handleChatControlCommands($params, $message, $value_id);
                 if (null !== $chatControlPayload) {
                     return $this->_sendJson($chatControlPayload);
                 }
                 // check ovelall tokens limit here
-
-                $bridge_overall_tokens = (new Migachat_Model_BridgeAPI())->getOverAllTokens($value_id, $over_all_duration);
-                if ($bridge_overall_tokens[0]['total_tokens_sum'] > $over_tokens) {
-                    $this->logBridgeApiError(
-                        ['value_id' => $value_id],
-                        p__("Migachat", 'Overall token limit reached!')
-                    );
-
-                    $app_id      = (new Migachat_Model_Setting())->getAppIdByValueId($value_id);
-                    $application = (new Application_Model_Application())->find($app_id);
-                    $main_domain = __get('main_domain');
-
-                    $email_data            = [];
-                    $email_data['subject'] = p__("Migachat", 'Warning global API limit reached');
-                    $email_data['body']    = "In the past $over_all_duration hours we reached more than $over_tokens tokens allowed, please check your system. APP_ID:$app_id , APP_NAME:$application->getName() , MAIN DOMAIN:$main_domain ";
-
-                    $this->defaultSMTPEmail($email_data, $value_id);
-
-                    throw new Exception(p__("Migachat", 'Overall token limit reached!'), 1);
-                }
+                $this->enforceGlobalTokenLimit($value_id, $bridge_obj, null);
 
                 // Retrieve Chatbot settings
                 $setting_obj = new Migachat_Model_ChatbotSettings();
@@ -1865,6 +1844,51 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
     {
         $tokensPerByte = 1.0 / 4.0; // Assume 4 bytes per token
         return intval(ceil($bytes * $tokensPerByte));
+    }
+
+    /**
+     * Ensures the global token cap is respected for the provided instance.
+     *
+     * @param mixed                              $value_id
+     * @param Migachat_Model_BridgeAPISettings   $bridgeSettings
+     * @param array<int, array<string, mixed>>|null $conversationTotals
+     *
+     * @throws Exception When the global token limit is exceeded.
+     */
+    private function enforceGlobalTokenLimit($value_id, Migachat_Model_BridgeAPISettings $bridgeSettings, $conversationTotals = null)
+    {
+        $overallDuration = $bridgeSettings->getOverallDuration() ? $bridgeSettings->getOverallDuration() : 24;
+        $overallLimit    = $bridgeSettings->getOverallLimit() ? $bridgeSettings->getOverallLimit() : 2500000;
+
+        if (null === $conversationTotals) {
+            $conversationTotals = (new Migachat_Model_BridgeAPI())->getOverAllTokens($value_id, $overallDuration);
+        }
+
+        $totalTokens = 0;
+        if (isset($conversationTotals[0]['total_tokens_sum'])) {
+            $totalTokens = $conversationTotals[0]['total_tokens_sum'];
+        }
+
+        if ($totalTokens > $overallLimit) {
+            $this->logBridgeApiError(
+                ['value_id' => $value_id],
+                p__("Migachat", 'Overall token limit reached!')
+            );
+
+            $app_id      = (new Migachat_Model_Setting())->getAppIdByValueId($value_id);
+            $application = (new Application_Model_Application())->find($app_id);
+            $main_domain = __get('main_domain');
+
+            $email_data            = [];
+            $email_data['subject'] = p__("Migachat", 'Warning global API limit reached');
+            $email_data['body']    = "In the past $overallDuration hours we reached more than $overallLimit tokens allowed, please check your system. APP_ID:$app_id , APP_NAME:" . $application->getName() . " , MAIN DOMAIN:$main_domain ";
+
+            $this->defaultSMTPEmail($email_data, $value_id);
+
+            throw new Exception(p__("Migachat", 'Overall token limit reached!'), 1);
+        }
+
+        return $conversationTotals;
     }
 
     public function checkPositiveResponce($question, $text, $secret_key, $organization_id)
