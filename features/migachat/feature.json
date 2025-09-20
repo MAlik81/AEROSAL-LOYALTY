@@ -1,0 +1,28 @@
+{
+  "name": "Migachat",
+  "code": "migachat",
+  "version": "0.0.2",
+  "category": "integration",
+  "model": "Migachat_Model_Setting",
+  "desktop_uri": "migachat/application/",
+  "routes": [
+    {
+      "root": true,
+      "state": "migachat-view",
+      "controller": "MigachatController",
+      "url": "migachat/mobile_view/index/value_id/:value_id",
+      "template": "l1/view.html",
+      "cache": false
+    }
+  ],
+  "icons": [
+    "icons/migachat1.png",
+    "icons/migachat2.png",
+    "icons/migachat3.png"
+  ],
+  "files": ["js/controllers/migachat.js", "js/factory/migachat.js"],
+  "is_ajax": true,
+  "compile": true,
+  "use_account": true,
+  "only_once": false
+}

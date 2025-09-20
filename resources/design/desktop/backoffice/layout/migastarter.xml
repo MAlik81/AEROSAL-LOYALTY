@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<layout>
-    <migastarter_backoffice_migastarter_template>
-        <views>
-            <content class="core_view_default" template="html/default.phtml" />
-            <page_content class="core_view_default" template="backoffice/migastarter/index.phtml" />
-        </views>
-    </migastarter_backoffice_migastarter_template>
-</layout>

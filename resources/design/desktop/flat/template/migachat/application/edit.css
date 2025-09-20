@@ -1,0 +1,162 @@
+ /* Popup container */
+ .app_delete_single_chat_history,
+ .app_delete_all_chat_history,
+ .api_delete_all_chat_history,
+ .api_delete_single_chat_history,
+ .app_delete_all_chat_history_update_prompt,
+ .log_details-popup {
+     display: none;
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 100%;
+     background-color: rgba(0, 0, 0, 0.7);
+     z-index: 999;
+ }
+
+ /* Popup content */
+ .app_delete_single_chat_history-content,
+ .app_delete_all_chat_history-content,
+ .api_delete_all_chat_history-content,
+ .api_delete_single_chat_history-content,
+ .app_delete_all_chat_history_update_prompt-content,
+ .log_details-popup-content {
+     background-color: #fff;
+     max-width: 60%;
+     margin: 0 auto;
+     min-height: 300px;
+     margin-top: 20vh;
+     padding: 20px;
+     border-radius: 2px;
+     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+     position: relative;
+ }
+
+ /* Close button */
+ .close-button {
+     position: absolute;
+     top: 10px;
+     right: 10px;
+     cursor: pointer;
+ }
+
+ /* Popup header */
+ .app_delete_single_chat_history-header,
+ .app_delete_all_chat_history-header,
+ .api_delete_all_chat_history-header,
+ .api_delete_single_chat_history-header,
+ .app_delete_all_chat_history_update_prompt-header,
+ .log_details-popup-header {
+     font-size: 24px;
+     font-weight: bold;
+     margin-bottom: 20px;
+ }
+
+ /* Text area and buttons */
+ .app_delete_single_chat_history-textarea,
+ .app_delete_all_chat_history-textarea,
+ .api_delete_all_chat_history-textarea,
+ .api_delete_single_chat_history-textarea,
+ .app_delete_all_chat_history_update_prompt-textarea,
+ .log_details-popup-textarea {
+     margin-bottom: 20px;
+     max-height: 600px;
+     overflow: auto;
+ }
+
+ /* Buttons */
+ .app_delete_single_chat_history-button,
+ .app_delete_all_chat_history-button,
+ .api_delete_all_chat_history-button,
+ .api_delete_single_chat_history-button,
+ .app_delete_all_chat_history_update_prompt-button {
+     padding: 10px 20px;
+     margin: 0 10px;
+     cursor: pointer;
+     border: none;
+     border-radius: 4px;
+ }
+
+ .app_delete_single_chat_history_complete,
+ .app_delete_all_chat_history_complete,
+ .api_delete_all_chat_history_complete,
+ .api_delete_single_chat_history_complete,
+ .app_delete_all_chat_history_update_no {
+     background-color: #4CAF50;
+     color: white;
+ }
+
+ .app_delete_single_chat_history_chat,
+ .app_delete_all_chat_history_chat,
+ .api_delete_all_chat_history_chat,
+ .api_delete_single_chat_history_chat,
+ .app_delete_all_chat_history_update_prompt_chat {
+     background-color: #d99413;
+     color: white;
+ }
+
+ /* Popup container */
+ #system-prompt-popup,.system-prompt-popup {
+     display: none;
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 100%;
+     background-color: rgba(0, 0, 0, 0.7);
+     z-index: 999;
+ }
+
+ /* Popup content */
+ .system-prompt-popup-content {
+     background-color: #fff;
+     max-width: 60%;
+     margin: 0 auto;
+     min-height: 500px;
+     margin-top: 20vh;
+     padding: 20px;
+     border-radius: 2px;
+     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+     position: relative;
+ }
+
+ /* Close button */
+ .close-button {
+     position: absolute;
+     top: 10px;
+     right: 10px;
+     cursor: pointer;
+ }
+
+ /* Popup header */
+ .system-prompt-popup-header {
+     font-size: 24px;
+     font-weight: bold;
+     margin-bottom: 20px;
+ }
+
+ /* Text area and buttons */
+ .system-prompt-popup-textarea {
+     margin-bottom: 20px;
+ }
+
+ /* Buttons */
+ .system-prompt-popup-button {
+     padding: 10px 20px;
+     margin: 0 10px;
+     cursor: pointer;
+     border: none;
+     border-radius: 4px;
+ }
+
+ .system-prompt-confirm-button {
+     background-color: #4CAF50;
+     color: white;
+ }
+
+ .system-prompt-decline-button {
+     background-color: #f44336;
+     color: white;
+ }
+

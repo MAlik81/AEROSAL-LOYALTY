@@ -1,8 +1,8 @@
 {
-  "name": "Migastarter",
-  "description": "Migastarter Module",
+  "name": "Migachat",
+  "description": "Migachat Module",
   "type": "module",
-  "version": "1.1.1000",
+  "version": "1.3.31",
   "dependencies": {
     "system": {
       "type": "SAE",

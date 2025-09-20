@@ -1,10 +1,10 @@
 <?php
 /**
- *  * Class Migastarter_Public_LicenseController
+ *  * Class Migachat_Public_LicenseController
  *  */
-class Migastarter_Public_LicenseController extends Migastarter_Controller_Default {
+class Migachat_Public_LicenseController extends Migachat_Controller_Default {
 
-    public $module = 'Migastarter';
+    public $module = 'Migachat';
     
     public function validateAction() {
         $this->_sendHtml($this->_validatePlatformLicense());
@@ -39,15 +39,15 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
         }
 
         return [
-            "title" => p__('Migastarter',"Migastarter"),
+            "title" => __("Migachat"),
             "icon" => "fa fa-certificate",
             "base_url" => $base_url,
             "activated" => $activated,
             "expiry" => $expiry,
             "days" => $days,
             "is_platform" => $is_platform,
-            "info_message" => p__('Migastarter',$info_message),
-            "success_message" => p__('Migastarter',$success_message),
+            "info_message" => __($info_message),
+            "success_message" => __($success_message),
         ];
     }
 
@@ -169,12 +169,12 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
             }
             $data = [
                 "success" => 1,
-                "message" => p__('Migastarter',$message)
+                "message" => __($message)
             ];
         } catch(Exception $e) {
             $data = [
                 "error" => 1,
-                "message" => p__('Migastarter',$e->getMessage()),
+                "message" => __($e->getMessage()),
             ];
         }
         $this->_sendHtml($data);
@@ -183,6 +183,7 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
 
     public function disableAction() {
         $message = "";
+        $activated = "";
         $success = 0;
         if($token = $this->getRequest()->getParam('token')) {
             $license_type = $this->getRequest()->getParam('license_type');
@@ -206,9 +207,56 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
                 } else {
                     $message = "No license found for this module.";
                 }
+			} elseif ($license_type == 'per-instance' && $this->getRequest()->getParam('instance_id')) { //per-instance license elseif
+				if (file_exists($base . "/app_licenses.json")) { 
+					$myfile = fopen($base . "/app_licenses.json", "r") or die("Unable to open file!");
+                    $app_licenses = json_decode(fread($myfile,filesize($base . "/app_licenses.json")),true);
+                    fclose($myfile);
+
+					if(count($app_licenses)) {
+                        $app_id = $this->getRequest()->getParam('app_id');
+						$instance_id = $this->getRequest()->getParam('instance_id');
+						$selected_key = -1;
+                        foreach($app_licenses as $app_license_key => $app_license) {
+                            if (isset($app_license['instance_id']) && $app_id == base64_decode(base64_decode($app_license['app_id'])) && $instance_id == base64_decode(base64_decode($app_license['instance_id']))) {
+                                $base_url = base64_decode(base64_decode($app_license['base_url']));
+                                $expiry = base64_decode(base64_decode($app_license['expiry']));
+                                if($app_license['base_url'] == $token) {
+									if ($this->getRequest()->getParam('remove_license')) {
+										$selected_key = $app_license_key;
+										$message = "The license has been reset successfully.";
+										$success = 1;
+										break;
+									} else if ($this->_isExpired($expiry)) {
+										$selected_key = $app_license_key;
+                                        $message = "Your license has been expired on " . $expiry . "(READ ONLY ACTIVATED).";
+										$success = 1;
+										break;
+                                    } else if (Zend_Controller_Front::getInstance()->getBaseUrl() != $base_url) { //this else if is added in 2.0
+                                        $message = "The license is invalid and cannot be used on this domain.";
+                                    } else {
+                                        $days = $this->_dateDays($activated, $expiry);
+                                        $message = 'Your license is active on the domain ' . $base_url . ' for ' . $days . ' days from ' . $activated . ' to ' . $expiry . '.';
+                                        $info_message = '';
+                                    }
+                                } else {
+                                    $message = "Invalid instance token.";
+                                }
+                            }
+                        }
+                        if ($success && $selected_key != -1) {
+							$app_licenses = array_filter((array) $app_licenses, function($key) use ($selected_key){
+								return $key != $selected_key;
+							}, ARRAY_FILTER_USE_KEY);
+							$json_data = json_encode($app_licenses, JSON_PRETTY_PRINT);
+							file_put_contents($base . "/app_licenses.json", $json_data);
+                        }
+                    }
+				} else {
+                    $message = "No instance license found for this module.";
+                }
             } else {
-                if(file_exists($base . "/app_licenses.json")) {
-                    
+                if(file_exists($base . "/app_licenses.json")) {      
                     $myfile = fopen($base . "/app_licenses.json", "r") or die("Unable to open file!");
                     $app_licenses = json_decode(fread($myfile,filesize($base . "/app_licenses.json")),true);
                     fclose($myfile);
@@ -249,7 +297,7 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
 
         $this->_sendHtml([
             "success" => $success,
-            "message" => p__('Migastarter',$message),
+            "message" => __($message),
         ]);
     }
 
@@ -270,7 +318,22 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
                     if(count($app_licenses)) {
                         foreach($app_licenses as $app_license_key => $app_license) {
                             $license_app_id = base64_decode(base64_decode($app_license['app_id']));
-                            if($app_id == $license_app_id) {
+							//code for instance license start
+							if ($this->getRequest()->getParam('instance_id') && isset($app_license['instance_id']) && base64_decode(base64_decode($app_license['instance_id'])) == $this->getRequest()->getParam('instance_id')) {
+								$license_instance_id = base64_decode(base64_decode($app_license['instance_id']));
+								$expiry = base64_decode(base64_decode($app_license['expiry']));
+                                $base_url = base64_decode(base64_decode($app_license['base_url']));
+                                $activated = base64_decode(base64_decode($app_license['activated']));
+                                if($this->_isExpired($expiry)) {
+                                    $info_message = "Your license has been expired on " . $expiry . "(READ ONLY ACTIVATED).";
+                                } else {
+                                    $days = $this->_dateDays($activated, $expiry);
+                                    $success_message = 'Your license is active on the domain ' . $base_url . ' for ' . $days . ' days from ' . $activated . ' to ' . $expiry . '.';
+                                    $info_message = '';
+                                }
+                                break;
+								//code for instance license end
+							} else if ($app_id == $license_app_id && !isset($app_license['instance_id'])) {
                                 $expiry = base64_decode(base64_decode($app_license['expiry']));
                                 $base_url = base64_decode(base64_decode($app_license['base_url']));
                                 $activated = base64_decode(base64_decode($app_license['activated']));
@@ -288,8 +351,8 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
                 }
                 $license = [
                     "is_platform" => false,
-                    "info_message" => p__('Migastarter',$info_message),
-                    "success_message" => p__('Migastarter',$success_message),
+                    "info_message" => __($info_message),
+                    "success_message" => __($success_message),
                 ];
             }
         }
@@ -332,7 +395,8 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
                         'module' => $package['name'],
                         'version' => $package['version'],
                         'license_type' => 'per-app',
-                        'app_id' => $data['app_id']
+                        'app_id' => $data['app_id'],
+						'instance_id' => $data['value_id'] //code for instance license
                     ];
                 
                 $curl = curl_init();
@@ -357,10 +421,8 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
                 $curl_error = json_decode($curl_error);
 
                 if ($curl_error) {
-                     
                     throw new Exception($curl_error);
-                } else {
-                    
+                } else {       
                         switch($response->success) {
                             case 1:
                             case 2:
@@ -368,15 +430,13 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
                                     unset($response->success);
                                     unset($response->message);
                                     if(file_exists($base . "/app_licenses.json")) {
-                                        // $app_licenses = json_decode(file_get_contents($base . "/app_licenses.json"));
-                                        
                                         $myfile = fopen($base . "/app_licenses.json", "r") or die("Unable to open file!");
                                         $app_licenses = json_decode(fread($myfile,filesize($base . "/app_licenses.json")),true);
                                         fclose($myfile);
 
                                         if(count($app_licenses)) {
                                             foreach($app_licenses as $app_license_key => $app_license) {
-                                                if($data['app_id'] == base64_decode(base64_decode($app_license->app_id))) {  
+                                                if (($data['app_id'] == base64_decode(base64_decode($app_license->app_id)) && isset($response->instance_id) && isset($app_license->instance_id) && $data['value_id'] == base64_decode(base64_decode($app_license->instance_id))) || (!isset($response->instance_id) && $data['app_id'] == base64_decode(base64_decode($app_license->app_id)))) {  //if code for instance license
                                                     unset($app_licenses[$app_license_key]);
                                                 }
                                             }
@@ -398,7 +458,7 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
                 }
                 $data = [
                     'success' => true,
-                    "message" => p__('Migastarter',$message),
+                    "message" => __($message),
                     'message_timeout' => 0,
                     'message_button' => 0,
                     'message_loader' => 0
@@ -406,7 +466,7 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
             } catch(Exception $e) {
                 $data = [
                     'error' => true,
-                    'message' => p__('Migastarter',$e->getMessage()),
+                    'message' => __($e->getMessage()),
                     'message_button' => 1,
                     'message_loader' => 1
                 ];
@@ -437,17 +497,16 @@ class Migastarter_Public_LicenseController extends Migastarter_Controller_Defaul
                         'app_name' => $application->getName(),
                         'activated' => str_replace('-', '/', date('d-m-Y', strtotime(base64_decode(base64_decode($app_license['activated']))))),
                         'expiry' => str_replace('-', '/', date('d-m-Y', strtotime(base64_decode(base64_decode($app_license['expiry']))))),
-                        'status' => $this->_isExpired(base64_decode(base64_decode($app_license['expiry']))) ? p__('Migastarter','Expired') : p__('Migastarter','Active'),
+                        'status' => $this->_isExpired(base64_decode(base64_decode($app_license['expiry']))) ? __('Expired') : __('Active'),
                     ];
                 }
             }
         }
         $licenses = [
-            "info_message" => p__('Migastarter',$info_message),
-            "success_message" => p__('Migastarter',$success_message),
+            "info_message" => __($info_message),
+            "success_message" => __($success_message),
             "app_licenses" => $data,
         ];
         $this->_sendHtml($licenses);
     }
-    
 }

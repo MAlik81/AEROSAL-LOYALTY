@@ -1,0 +1,1673 @@
+msgid ""
+msgstr ""
+"Project-Id-Version:\n"
+"Report-Msgid-Bugs-To:\n"
+"Last-Translator:\n"
+"Language-Team:\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2019-12-24T18:45:15+01:00\n"
+"PO-Revision-Date: 2019-12-24T18:45:15+01:00\n"
+"Language:\n"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Migachat"
+msgstr "Migachat"
+
+# GMT 1558015700.600
+#, mobile
+msgctxt "Migachat"
+msgid "Valid Until"
+msgstr "Valid Until"
+
+# GMT 1558015700.600
+#, mobile
+msgctxt "Migachat"
+msgid "Terms & Conditions"
+msgstr "Terms & Conditions"
+
+# GMT 1558015700.60024
+msgctxt "Migachat"
+msgid "Your license has been expired on "
+msgstr "Your license has been expired on "
+
+# GMT 1558015700.60028
+msgctxt "Migachat"
+msgid "Your license has been expired on %s (READ ONLY ACTIVATED)."
+msgstr "Your license has been expired on %s (READ ONLY ACTIVATED)."
+
+# GMT 1558015700.60029
+msgctxt "Migachat"
+msgid "Your license is active on the domain %s for %s days from %s to %s."
+msgstr "Your license is active on the domain %s for %s days from %s to %s."
+
+# GMT 1558015700.60030
+msgctxt "Migachat"
+msgid "No license found for this module."
+msgstr "No license found for this module."
+
+
+# GMT 1558015700.60032
+msgctxt "Migachat"
+msgid "License key cannot be empty."
+msgstr "License key cannot be empty."
+
+# GMT 1558015700.60033
+msgctxt "Migachat"
+msgid "License key is invalid."
+msgstr "License key is invalid."
+
+# GMT 1558015700.60034
+msgctxt "Migachat"
+msgid "Unable to connect to the license server."
+msgstr "Unable to connect to the license server."
+
+# GMT 1558015700.60035
+msgctxt "Migachat"
+msgid "Module is expired and license is deleted."
+msgstr "Module is expired and license is deleted."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Your Module License Key"
+msgstr "Your Module License Key"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Invalid Access."
+msgstr "Invalid Access."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "You are using your custom help URL."
+msgstr "You are using your custom help URL."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "You are using default help URL (https://www.migastone.com/migachat)."
+msgstr "You are using default help URL (https://www.migastone.com/migachat)."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Help URL cannot be empty."
+msgstr "Help URL cannot be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Help URL is not valid."
+msgstr "Help URL is not valid."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Help URL updated successfully."
+msgstr "Help URL updated successfully."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Hi, sorry for the inconvenience. Please try again later"
+msgstr "Hi, sorry for the inconvenience. Please try again later"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Message cannot b empty!."
+msgstr "Message cannot b empty!."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Message not sent"
+msgstr "Message not sent"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Organization Id can not be empty."
+msgstr "Organization Id can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Secret key can not be empty."
+msgstr "Secret key can not be empty."
+.
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chatgpt credentials are not correct. Please make sure to enter correct credentials"
+msgstr "Chatgpt credentials are not correct. Please make sure to enter correct credentials"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Webhook url can not be empty."
+msgstr "Webhook url can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "An error occurred during process. Please try again later."
+msgstr "An error occurred during process. Please try again later."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Settings saved successfully!"
+msgstr "Settings saved successfully!"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Customer Id can not be empty."
+msgstr "Customer Id can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Message Not Sent!"
+msgstr "Message Not Sent!"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Incomming Message"
+msgstr "Incomming Message"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Push sent"
+msgstr "Push sent"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Save"
+msgstr "Save"
+L
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Your Module Help UR"
+msgstr "Your Module Help UR"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "App Id"
+msgstr "App Id"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "App Name"
+msgstr "App Name"
+
+# GMT 1558015700.600
+msgctxt "App Name"
+msgid "Expiry"
+msgstr "Expiry"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Activated"
+msgstr "Activated"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Status"
+msgstr "Status"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "CRON Job Information"
+msgstr "CRON Job Information"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "CRON Job Log"
+msgstr "CRON Job Log"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Last Error"
+msgstr "Last Error"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Last Error Date"
+msgstr "Last Error Date"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Last Trigger"
+msgstr "Last Trigger"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Last Fail"
+msgstr "Last Fail"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Last Success"
+msgstr "Last Success"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Created At"
+msgstr "Created At"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Updated At"
+msgstr "Updated At"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "APIs Configration"
+msgstr "APIs Configration"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat Archives"
+msgstr "Chat Archives"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Push Logs"
+msgstr "Push Logs"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Design"
+msgstr "Design"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "API CONFIGRATIONS"
+msgstr "API CONFIGRATIONS"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Select an option"
+msgstr "Select an option"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat Gpt Apis"
+msgstr "Chat Gpt Apis"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Webhook"
+msgstr "Webhook"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Organization ID"
+msgstr "Organization ID"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Secret Key"
+msgstr "Secret Key"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Webhook URL"
+msgstr "Webhook URL"
+
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Select Customer"
+msgstr "Select Customer"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "New received messages push logs"
+msgstr "New received messages push logs"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Message Id"
+msgstr "Message Id"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Message Content"
+msgstr "Message Content"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Customer Id"
+msgstr "Customer Id"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Customer Name"
+msgstr "Customer Name"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Success"
+msgstr "Success"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Fail"
+msgstr "Fail"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Platform"
+msgstr "Platform"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The message will be sent json encoded via POST method in the "message" variable instead of query string."
+msgstr "The message will be sent json encoded via POST method in the "message" variable instead of query string."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The webservice link to capture the responce from webhook"
+msgstr "The webservice link to capture the responce from webhook"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The webservice request must containt these parameters"
+msgstr "The webservice request must containt these parameters"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Select ChatGPT Model"
+msgstr "Select ChatGPT Model"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "History For Webhooks"
+msgstr "History For Webhooks"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System prompt For Webhooks"
+msgstr "System prompt For Webhooks"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System prompt For ChatGPT"
+msgstr "System prompt For ChatGPT"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System prompt"
+msgstr "System prompt"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Authentication token mismatch"
+msgstr "Authentication token mismatch"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Application settings mismatch"
+msgstr "Application settings mismatch"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Instance id cannot be empty"
+msgstr "Instance id cannot be empty"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Request processed successfully"
+msgstr "Request processed successfully"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Authentication failed"
+msgstr "Authentication failed"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Value id can not be empty."
+msgstr "Value id can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Authentication Token can not be empty."
+msgstr "Authentication Token can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Webhook prompt exceeded 2000 tokens"
+msgstr "Webhook prompt exceeded 2000 tokens"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chatgpt prompt exceeded 2000 tokens"
+msgstr "Chatgpt prompt exceeded 2000 tokens"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Authentication token can not be empty."
+msgstr "Authentication token can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat Id can not be empty."
+msgstr "Chat Id can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Export chat in csv"
+msgstr "Export chat in csv"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Select Chat ID"
+msgstr "Select Chat ID"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Bridge API Chat Archives"
+msgstr "Bridge API Chat Archives"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The API optional parameters"
+msgstr "The API optional parameters"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The API request must containt these parameters"
+msgstr "The API request must containt these parameters"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The Bridge API URL"
+msgstr "The Bridge API URL"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Instance ID"
+msgstr "Instance ID"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Authentication Token"
+msgstr "Authentication Token"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Bridge API configrations"
+msgstr "Bridge API configrations"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Enable"
+msgstr "Enable"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Disable"
+msgstr "Disable"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Logs"
+msgstr "Logs"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat Logs"
+msgstr "Chat Logs"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Log Id"
+msgstr "Log Id"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Descripiton"
+msgstr "Descripiton"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Error"
+msgstr "Error"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Enable Bridge API?"
+msgstr "Enable Bridge API?"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Disable Bridge API?"
+msgstr "Disable Bridge API?"
+
+# GMT 1558015700.600
+#, mobile
+msgctxt "Migachat"
+msgid "Chat Support"
+msgstr "Chat Support"
+
+# GMT 1558015700.600
+#, mobile
+msgctxt "Migachat"
+msgid "This is your traditional Chatbot"
+msgstr "This is your traditional Chatbot"
+
+
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Over duration for tokens limit"
+msgstr "Over duration for tokens limit"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Per chat id tokens limit"
+msgstr "Per chat id tokens limit"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Per chat id tokens limit duration"
+msgstr "Per chat id tokens limit duration"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Overall tokens limit"
+msgstr "Overall tokens limit"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "HOURS"
+msgstr "HOURS"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "TOKENS"
+msgstr "TOKENS"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Minutes"
+msgstr "Minutes"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Overall token limit reached!"
+msgstr "Overall token limit reached!"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat id tokens limit reached!"
+msgstr "Chat id tokens limit reached!"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The service is disabled! Please try again later."
+msgstr "The service is disabled! Please try again later."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Repeating messages more than 2 times is not allowed!"
+msgstr "Repeating messages more than 2 times is not allowed!"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Please save the Settings first before. Otherwise chatbot will not work."
+msgstr "Please save the Settings first before. Otherwise chatbot will not work."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Settings"
+msgstr "Settings"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "APP Chat Archives"
+msgstr "APP Chat Archives"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "API Chat Archives"
+msgstr "API Chat Archives"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "APP Chat Stats & Export"
+msgstr "APP Chat Stats & Export"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "From Last Interaction Date Range"
+msgstr "From Last Interaction Date Range"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "To"
+msgstr "To"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Filter Stats"
+msgstr "Filter Stats"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Total Chats"
+msgstr "Total Chats"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Total Prompt Tokens"
+msgstr "Total Prompt Tokens"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Total Completion Tokens"
+msgstr "Total Completion Tokens"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat related to date filter"
+msgstr "Chat related to date filter"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "EXPORT CSV"
+msgstr "EXPORT CSV"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "API Chat Archive Search"
+msgstr "API Chat Archive Search"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "APP user Name, Email or Phone"
+msgstr "APP user Name, Email or Phone"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "SEARCH"
+msgstr "SEARCH"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "USER NAME"
+msgstr "USER NAME"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "USER EMAIL"
+msgstr "USER EMAIL"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "USER PHONE"
+msgstr "USER PHONE"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Delete customer chat history"
+msgstr "Delete customer chat history"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Download Csv"
+msgstr "Download Csv"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Time Stamp"
+msgstr "Time Stamp"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Role"
+msgstr "Role"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Message"
+msgstr "Message"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Tokens"
+msgstr "Tokens"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat ID, user Name, Email or Phone"
+msgstr "Chat ID, user Name, Email or Phone"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Select Chat ID"
+msgstr "Select Chat ID"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat Id"
+msgstr "Chat Id"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Delete Current Chat History"
+msgstr "Delete Current Chat History"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Last 30 Chat Logs"
+msgstr "Last 30 Chat Logs"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Module Configuration"
+msgstr "Module Configuration"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Module Operation"
+msgstr "Module Operation"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat Gpt API"
+msgstr "Chat Gpt API"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Following parameters are included in url"
+msgstr "Following parameters are included in url"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "OpenAI Configuration"
+msgstr "OpenAI Configuration"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Select Model"
+msgstr "Select Model"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System Limit for this model"
+msgstr "System Limit for this model"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Total Prompt Limit"
+msgstr "Total Prompt Limit"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "SYSTEM PROMPT Configuration"
+msgstr "SYSTEM PROMPT Configuration"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Words Count:"
+msgstr "Words Count:"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Optimze system prompt"
+msgstr "Optimze system prompt"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Documentation"
+msgstr "Documentation"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Overall duration for tokens limit"
+msgstr "Overall duration for tokens limit"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Please validate the optimized system prompt"
+msgstr "Please validate the optimized system prompt"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Optimized System Prompt"
+msgstr "Optimized System Prompt"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Save new prompt"
+msgstr "Save new prompt"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Keep existing prompt"
+msgstr "Keep existing prompt"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Date from can not be empty."
+msgstr "Date from can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Date to can not be empty."
+msgstr "Date to can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Date from can not be greater than date to"
+msgstr "Date from can not be greater than date to"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Authen token can not be empty."
+msgstr "Authen token can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Customer can not be empty."
+msgstr "Customer can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System prompt exceeded tokens"
+msgstr "System prompt exceeded tokens"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System prompt can not be empty."
+msgstr "System prompt can not be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chatgpt credentials are not correct. Please make sure to enter correct credentials."
+msgstr "Chatgpt credentials are not correct. Please make sure to enter correct credentials."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "App Chat Deleted Successfully"
+msgstr "App Chat Deleted Successfully"
+# GMT 1558015700.600
+
+msgctxt "Migachat"
+msgid "API Chat Deleted Successfully"
+msgstr "API Chat Deleted Successfully"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Hi, sorry for inconvenience. Please try again later"
+msgstr "Hi, sorry for inconvenience. Please try again later"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Message Successfully sent & received response"
+msgstr "Message Successfully sent & received response"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "History duration updated successfully."
+msgstr "History duration updated successfully."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "History duration cannot be empty."
+msgstr "History duration cannot be empty."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Duration to maintain history of chats"
+msgstr "Duration to maintain history of chats"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Select Duration"
+msgstr "Select Duration"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Life Time"
+msgstr "Life Time"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "3 Months"
+msgstr "3 Months"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "6 Months"
+msgstr "6 Months"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "9 Months"
+msgstr "9 Months"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "12 Months"
+msgstr "12 Months"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "User chat limit exceed responce"
+msgstr "User chat limit exceed responce"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI is enabled"
+msgstr "AI is enabled"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI is disabled"
+msgstr "AI is disabled"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Limit is disabled"
+msgstr "Limit is disabled"
+
+
+.
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI turned OFF for this chat id, untill it is turned back ON"
+msgstr "AI turned OFF for this chat id, untill it is turned back ON"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Error while turning OFF the AI for this chat id."
+msgstr "Error while turning OFF the AI for this chat id."
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI turned ON for this chat id, untill it is turned back OFF."
+msgstr "AI turned ON for this chat id, untill it is turned back OFF."
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Error while turning ON the AI for this chat id."
+msgstr "Error while turning ON the AI for this chat id."
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Token limit turned OFF permanantly for this chat id."
+msgstr "Token limit turned OFF permanantly for this chat id."
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Error while turning OFF the limit for this chat id."
+msgstr "Error while turning OFF the limit for this chat id."
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI is turned off for this chat id."
+msgstr "AI is turned off for this chat id."
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Delete All Chats History"
+msgstr "Delete All Chats History"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Last saved tokens"
+msgstr "Last saved tokens"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "If the prompt is not already in English you can translate it into English, for same prompt you will have less tokens."
+msgstr "If the prompt is not already in English you can translate it into English, for same prompt you will have less tokens."
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Email does not belong to any customer."
+msgstr "Email does not belong to any customer."
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "OpenAI models tokens limit"
+msgstr "OpenAI models tokens limit"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "History Tokens %"
+msgstr "History Tokens %"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Max messages in history"
+msgstr "Max messages in history"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System prompt tokens %"
+msgstr "System prompt tokens %"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Warning! you can not turn back on the tokens limit once it turned off."
+msgstr "Warning! you can not turn back on the tokens limit once it turned off."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "To turn off the tokens limit for a chat id send"
+msgstr "To turn off the tokens limit for a chat id send"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "To turn back on the AI responce for a chat id send"
+msgstr "To turn back on the AI responce for a chat id send"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "To turn off the AI responce for a chat id send"
+msgstr "To turn off the AI responce for a chat id send"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "OpenAI custom model tokens limit"
+msgstr "OpenAI custom model tokens limit"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Model Name"
+msgstr "Model Name"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Tokens Limit"
+msgstr "Tokens Limit"
+
+# GMT 1558015700.600
+#, mobile
+msgctxt "Migachat"
+msgid "Text copied to clipboard!"
+msgstr "Text copied to clipboard!"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "GDPR Settings"
+msgstr "GDPR Settings"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "GDPR privacy Enabled?"
+msgstr "GDPR privacy Enabled?"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Yes"
+msgstr "Yes"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "No"
+msgstr "No"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "GDPR privacy link"
+msgstr "GDPR privacy link"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "GDPR welcome text"
+msgstr "GDPR welcome text"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "GDPR accept text"
+msgstr "GDPR accept text"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "GDPR denied text"
+msgstr "GDPR denied text"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Reset duration"
+msgstr "Reset duration"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "COMMERCIAL CONSENT Enabled?"
+msgstr "COMMERCIAL CONSENT Enabled?"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "COMMERCIAL CONSENT welcome text"
+msgstr "COMMERCIAL CONSENT welcome text"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Collect the privacy consent again for all chat ids"
+msgstr "Collect the privacy consent again for all chat ids"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Export CSV"
+msgstr "Export CSV"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Name"
+msgstr "Name"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Email"
+msgstr "Email"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Mobile"
+msgstr "Mobile"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "GDPR privacy"
+msgstr "GDPR privacy"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Commercial consent"
+msgstr "Commercial consent"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Action"
+msgstr "Action"
+
+
+# GMT 1558015700.600
+#, mobile
+msgctxt "Migachat"
+msgid "Chat Bot"
+msgstr "Chat Bot"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI answer continue confirmation message after cut off responce"
+msgstr "AI answer continue confirmation message after cut off responce"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Only add the messages in one language, System will adjust the translation according the user language."
+msgstr "Only add the messages in one language, System will adjust the translation according the user language."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Confirm Deletion"
+msgstr "Confirm Deletion"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI answer token limit"
+msgstr "AI answer token limit"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Are you sure you want to delete this user's chat history?"
+msgstr "Are you sure you want to delete this user's chat history?"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Yes I want to to delete"
+msgstr "Yes I want to to delete"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Are You sure you want to delete chat history of this instance?"
+msgstr "Are You sure you want to delete chat history of this instance?"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "We can completely delete the chat and its data, or we can delete the history while maintaining the user data, the chat id and the first interaction on the chat. We recommend deleting the chat completely only in cases of explicit requests from the user, for example regarding privacy."
+msgstr "We can completely delete the chat and its data, or we can delete the history while maintaining the user data, the chat id and the first interaction on the chat. We recommend deleting the chat completely only in cases of explicit requests from the user, for example regarding privacy."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Delete complete chat history and chat id data"
+msgstr "Delete complete chat history and chat id data"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Delete only chat history keeping first interaction"
+msgstr "Delete only chat history keeping first interaction"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "If you have modified a part of the existing prompt and this part changes considerably compared to before, then it is a good idea to delete the history of saved chats. However, if you have added information to the prompt that was not present before, we recommend that you do not delete anything. What do you want to do?"
+msgstr "If you have modified a part of the existing prompt and this part changes considerably compared to before, then it is a good idea to delete the history of saved chats. However, if you have added information to the prompt that was not present before, we recommend that you do not delete anything. What do you want to do?"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "No, do not delete"
+msgstr "No, do not delete"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Delete history"
+msgstr "Delete history"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Log Details"
+msgstr "Log Details"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "User Prompt"
+msgstr "User Prompt"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI Responce"
+msgstr "AI Responce"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System Prompt"
+msgstr "System Prompt"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "History Attached"
+msgstr "History Attached"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "AI and Token limit (suspension duration)"
+msgstr "AI and Token limit (suspension duration)"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "HOURS"
+msgstr "HOURS"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "0 forever"
+msgstr "0 forever"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Operator Settings"
+msgstr "Operator Settings"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Enabled for In-App chat?"
+msgstr "Enabled for In-App chat?"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Enabled for Bridge API chat?"
+msgstr "Enabled for Bridge API chat?"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Webhook URL"
+msgstr "Webhook URL"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The webhook must receive post request."
+msgstr "The webhook must receive post request."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The post request will have following params:"
+msgstr "The post request will have following params:"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "System Prompt to check if user asked for operator to contact"
+msgstr "System Prompt to check if user asked for operator to contact"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Ask for call from operator text"
+msgstr "Ask for call from operator text"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Confirm call from operator responce text"
+msgstr "Confirm call from operator responce text"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Decline call from operator responce text"
+msgstr "Decline call from operator responce text"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Add comma-separated emails to send notification"
+msgstr "Add comma-separated emails to send notification"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "By-default the email will be sent to admins."
+msgstr "By-default the email will be sent to admins."
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Email Subject"
+msgstr "Email Subject"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Email Template"
+msgstr "Email Template"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "The email template can contain the following placeholders:"
+msgstr "The email template can contain the following placeholders:"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Accepted"
+msgstr "Accepted"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "pending"
+msgstr "pending"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "accepted"
+msgstr "accepted"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Bot Type"
+msgstr "Bot Type"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Blacklisted numbers updated successfully."
+msgstr "Blacklisted numbers updated successfully."
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Blacklisted Numbers"
+msgstr "Blacklisted Numbers"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Add comma separated mobile number with complete formatting and without any spaces."
+msgstr "Add comma separated mobile number with complete formatting and without any spaces."
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Add blacklisted mobile numbers"
+msgstr "Add blacklisted mobile numbers"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Invalid call from operator responce text"
+msgstr "Invalid call from operator responce text"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Temporary / Permanent Blacklist Configuration"
+msgstr "Temporary / Permanent Blacklist Configuration"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Temporary blacklist duration (in hours)"
+msgstr "Temporary blacklist duration (in hours)"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "This setting dynamically applies the "Temporary Blacklist Duration" (in hours) when manually blocking a Bridge API user through the UI."
+msgstr "This setting dynamically applies the "Temporary Blacklist Duration" (in hours) when manually blocking a Bridge API user through the UI."
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Note"
+msgstr "Note"
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "These numbers will be permanently blacklisted from Bridge API."
+msgstr "These numbers will be permanently blacklisted from Bridge API."
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Temporary Blacklist"
+msgstr "Temporary Blacklist"
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Temporary Blacklisted"
+msgstr "Temporary Blacklisted"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Undo Temporary Blacklist"
+msgstr "Undo Temporary Blacklist"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Permanent blacklisted mobile numbers"
+msgstr "Permanent blacklisted mobile numbers"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Add comma-separated mobile numbers to be permanently blacklisted from Bridge API."
+msgstr "Add comma-separated mobile numbers to be permanently blacklisted from Bridge API."
+
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Invalid request format"
+msgstr "Invalid request format"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Chat Type -"
+msgstr "Chat Type"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Assistant"
+msgstr "Assistant"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Simple Chat"
+msgstr "Simple Chat"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Assistant Settings"
+msgstr "Assistant Settings"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Select ChatGPT Assistant"
+msgstr "Select ChatGPT Assistant"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Create New Assistant"
+msgstr "Create New Assistant"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Create New"
+msgstr "Create New"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Assistant Name"
+msgstr "Assistant Name"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Description"
+msgstr "Description"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Instructions"
+msgstr "Instructions"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Model"
+msgstr "Model"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Attach Files"
+msgstr "Attach Files"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Top P"
+msgstr "Top P"
+
+# GMT 1558015700.600
+msgctxt "Migachat"
+msgid "Temperature"
+msgstr "Temperature"
+
+
+# Missing translations added
+msgctxt "Migachat"
+msgid "The cron is set to run every 1 minute and if you want to run it now just click on the link above. If you want you can add this link to your own server cron."
+msgstr "The cron is set to run every 1 minute and if you want to run it now just click on the link above. If you want you can add this link to your own server cron."
+
+msgctxt "Migachat"
+msgid "No files found."
+msgstr "No files found."
+
+msgctxt "Migachat"
+msgid "No Vector Store IDs found."
+msgstr "No Vector Store IDs found."
+
+msgctxt "Migachat"
+msgid "Updated At"
+msgstr "Updated At"
+
+msgctxt "Migachat"
+msgid "APIs Configration"
+msgstr "APIs Configration"
+
+msgctxt "Migachat"
+msgid "Chat Archives"
+msgstr "Chat Archives"
+
+msgctxt "Migachat"
+msgid "Push Logs"
+msgstr "Push Logs"
+
+msgctxt "Migachat"
+msgid "Design"
+msgstr "Design"
+
+msgctxt "Migachat"
+msgid "API CONFIGRATIONS"
+msgstr "API CONFIGRATIONS"
+
+msgctxt "Migachat"
+msgid "Select an option"
+msgstr "Select an option"
+
+msgctxt "Migachat"
+msgid "Chat Gpt Apis"
+msgstr "Chat Gpt Apis"
+
+msgctxt "Migachat"
+msgid "Webhook"
+msgstr "Webhook"
+
+msgctxt "Migachat"
+msgid "Vector Store ID:"
+msgstr "Vector Store ID:"
+
+msgctxt "Migachat"
+msgid "Please select a chat id"
+msgstr "Please select a chat id"
+
+
+msgctxt "Migachat"
+msgid "API Chats CSV Import"
+msgstr "API Chats CSV Import"
+
+
+msgctxt "Migachat"
+msgid "Select CSV to import"
+msgstr "Select CSV to import"
+
+
+msgctxt "Migachat"
+msgid "API Chat Stats & Export"
+msgstr "API Chat Stats & Export"
+
+
+msgctxt "Migachat"
+msgid "Import CSV"
+msgstr "Import CSV"
+
+
+msgctxt "Migachat"
+msgid "Upload PDFs, docs, etc. (Max 20MB each)"
+msgstr "Upload PDFs, docs, etc. (Max 20MB each)"
+
+
+msgctxt "Migachat"
+msgid "OpenAI File IDs"
+msgstr "OpenAI File IDs"
+
+
+msgctxt "Migachat"
+msgid "Bridge API GDPR"
+msgstr "Bridge API GDPR"
+
+
+msgctxt "Migachat"
+msgid "Test Webhook"
+msgstr "Test Webhook"
+
+
+msgctxt "Migachat"
+msgid "Call from operator requests"
+msgstr "Call from operator requests"
+
+
+msgctxt "Migachat"
+msgid "User Id"
+msgstr "User Id"
+
+
+msgctxt "Migachat"
+msgid "Date Time"
+msgstr "Date Time"
+
+
+msgctxt "Migachat"
+msgid "Select Default Language"
+msgstr "Select Default Language"
+
