@@ -14,7 +14,7 @@
  * - Supports multiple languages for better user experience.
  */
 
-class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
+class Migachat_Public_BridgeapiControllerBU extends Migachat_Controller_Default
 {
     private $languages_list = [
         "sq"  => "Albanian",
