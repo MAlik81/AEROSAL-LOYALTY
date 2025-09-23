@@ -1460,12 +1460,6 @@ msgid "AI is disabled"
 msgstr "AI is disabled"
 
 
-# GMT 1558015700.600
-msgctxt "Migachat"
-msgid "Limit is disabled"
-msgstr "Limit is disabled"
-
-
 .
 # GMT 1558015700.600
 msgctxt "Migachat"
@@ -1490,18 +1484,6 @@ msgstr "AI turned ON for this chat id, untill it is turned back OFF."
 msgctxt "Migachat"
 msgid "Error while turning ON the AI for this chat id."
 msgstr "Error while turning ON the AI for this chat id."
-
-
-# GMT 1558015700.600
-msgctxt "Migachat"
-msgid "Token limit turned OFF permanantly for this chat id."
-msgstr "Token limit turned OFF permanantly for this chat id."
-
-
-# GMT 1558015700.600
-msgctxt "Migachat"
-msgid "Error while turning OFF the limit for this chat id."
-msgstr "Error while turning OFF the limit for this chat id."
 
 
 # GMT 1558015700.600
@@ -1569,18 +1551,6 @@ msgstr "System prompt tokens %"
 
 
 
-# GMT 1558015700.600
-msgctxt "Migachat"
-msgid "Warning! you can not turn back on the tokens limit once it turned off."
-msgstr "Warning! you can not turn back on the tokens limit once it turned off."
-
-
-
-
-# GMT 1558015700.600
-msgctxt "Migachat"
-msgid "To turn off the tokens limit for a chat id send"
-msgstr "To turn off the tokens limit for a chat id send"
 
 
 
@@ -2298,6 +2268,66 @@ msgstr "Date Time"
 msgctxt "Migachat"
 msgid "Select Default Language"
 msgstr "Select Default Language"
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Limit-off allowlist"
+msgstr "Limit-off allowlist"
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Numbers in this list bypass per-chat token limits. Use it carefully."
+msgstr "Numbers in this list bypass per-chat token limits. Use it carefully."
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Add allowlisted mobile number"
+msgstr "Add allowlisted mobile number"
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Current allowlisted numbers"
+msgstr "Current allowlisted numbers"
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Remove"
+msgstr "Remove"
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Mobile number cannot be empty."
+msgstr "Mobile number cannot be empty."
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Invalid mobile number format. Use the international format starting with +."
+msgstr "Invalid mobile number format. Use the international format starting with +."
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Mobile number is already allowlisted."
+msgstr "Mobile number is already allowlisted."
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Allowlist number added successfully."
+msgstr "Allowlist number added successfully."
+
+
+#: Allowlist management
+msgctxt "Migachat"
+msgid "Allowlist number removed successfully."
+msgstr "Allowlist number removed successfully."
 
 
 

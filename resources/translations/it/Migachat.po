@@ -763,10 +763,6 @@ msgid "AI is disabled"
 msgstr "AI disabilitata"
 
 msgctxt "Migachat"
-msgid "Limit is disabled"
-msgstr "Limite disabilitato"
-
-msgctxt "Migachat"
 msgid "AI turned OFF for this chat id, untill it is turned back ON"
 msgstr "AI disattivata per questo ID chat, fino a nuova attivazione"
 
@@ -781,14 +777,6 @@ msgstr "AI attivata per questo ID chat, fino a nuova disattivazione."
 msgctxt "Migachat"
 msgid "Error while turning ON the AI for this chat id."
 msgstr "Errore durante l'attivazione dell'AI per questo ID chat."
-
-msgctxt "Migachat"
-msgid "Token limit turned OFF permanantly for this chat id."
-msgstr "Limite token disattivato in modo permanente per questo ID chat."
-
-msgctxt "Migachat"
-msgid "Error while turning OFF the limit for this chat id."
-msgstr "Errore durante la disattivazione del limite per questo ID chat."
 
 msgctxt "Migachat"
 msgid "AI is turned off for this chat id."
@@ -825,14 +813,6 @@ msgstr "Numero massimo di messaggi in cronologia"
 msgctxt "Migachat"
 msgid "System prompt tokens %"
 msgstr "Token prompt di sistema %"
-
-msgctxt "Migachat"
-msgid "Warning! you can not turn back on the tokens limit once it turned off."
-msgstr "Attenzione! Non puoi riattivare il limite di token una volta disattivato."
-
-msgctxt "Migachat"
-msgid "To turn off the tokens limit for a chat id send"
-msgstr "Per disattivare il limite di token per un ID chat invia"
 
 msgctxt "Migachat"
 msgid "To turn back on the AI responce for a chat id send"
@@ -1289,5 +1269,65 @@ msgstr "Data e Ora"
 msgctxt "Migachat"
 msgid "Select Default Language"
 msgstr "Select Default Language"
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Limit-off allowlist"
+msgstr "Lista autorizzati senza limite"
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Numbers in this list bypass per-chat token limits. Use it carefully."
+msgstr "I numeri in questo elenco ignorano i limiti di token per chat. Usalo con attenzione."
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Add allowlisted mobile number"
+msgstr "Aggiungi numero autorizzato"
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Current allowlisted numbers"
+msgstr "Numeri autorizzati correnti"
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Remove"
+msgstr "Rimuovi"
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Mobile number cannot be empty."
+msgstr "Il numero di telefono non può essere vuoto."
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Invalid mobile number format. Use the international format starting with +."
+msgstr "Formato numero di telefono non valido. Usa il formato internazionale che inizia con +."
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Mobile number is already allowlisted."
+msgstr "Il numero di telefono è già autorizzato."
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Allowlist number added successfully."
+msgstr "Numero autorizzato aggiunto con successo."
+
+
+#: Gestione allowlist
+msgctxt "Migachat"
+msgid "Allowlist number removed successfully."
+msgstr "Numero autorizzato rimosso con successo."
 
 

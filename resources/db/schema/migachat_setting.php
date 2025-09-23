@@ -29,6 +29,11 @@ $schemas['migachat_setting'] = [
         'default' => '+393517819155,+393336239480,+393663534311,+393516321732',
         'is_null' => true,
     ],
+    'limit_off_numbers' => [
+        'type'    => 'text',
+        'default' => null,
+        'is_null' => true,
+    ],
     'created_at' => [
         'type' => 'datetime'
     ],

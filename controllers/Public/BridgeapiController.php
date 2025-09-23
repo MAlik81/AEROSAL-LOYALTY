@@ -334,6 +334,13 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         'звучит как план',
     ];
 
+    /**
+     * Cached list of mobiles that should bypass chat limits.
+     *
+     * @var array|null
+     */
+    private $limitOffAllowlist = null;
+
     private $negativeResponses = [
         // One-word negative responses
         'no',
@@ -1383,50 +1390,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 'chat_id'    => $chat_id_for_limit,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
-            ];
-        }
-
-        if ($normalizedMessage === '##limitoff##' && false) {
-            $chat_id_limit_obj   = new Migachat_Model_BridgrapiChatLimits();
-            $is_limit_turned_off = $chat_id_limit_obj->find(['value_id' => $value_id, 'chat_id' => $chat_id_for_limit, 'is_limit' => 1]);
-            if (! $is_limit_turned_off->getId()) {
-                $chat_id_limit_data = [
-                    'value_id'     => $value_id,
-                    'chat_id'      => $chat_id_for_limit,
-                    'is_limit'     => 1,
-                    'limit_off_at' => date('Y-m-d H:i:s'),
-                    'created_at'   => date('Y-m-d H:i:s'),
-                    'updated_at'   => date('Y-m-d H:i:s'),
-                ];
-
-                $blacklisted_numbers = "";
-                $setting             = new Migachat_Model_Setting();
-                $setting->find(1);
-                $blacklisted_numbers = $setting->getBlacklistedNumbers();
-                $blacklisted_numbers = ',' . trim($blacklisted_numbers, ',') . ',';                 // normalize with commas around
-                $blacklisted_numbers = str_replace(',' . $mobile . ',', ',', $blacklisted_numbers); // remove safely
-                $blacklisted_numbers = trim($blacklisted_numbers, ',');                             // clean up again
-                $setting->setBlacklistedNumbers($blacklisted_numbers)->save();
-
-                if ((new Migachat_Model_BridgrapiChatLimits())->addData($chat_id_limit_data)->save()) {
-                    return [
-                        'success' => true,
-                        'message' => p__("Migachat", 'Token limit turned OFF permanantly for this chat id.'),
-                        'chat_id' => $chat_id_for_limit,
-                    ];
-                }
-
-                return [
-                    'success' => true,
-                    'message' => p__("Migachat", 'Error while turning OFF the limit for this chat id.'),
-                    'chat_id' => $chat_id_for_limit,
-                ];
-            }
-
-            return [
-                'success' => true,
-                'message' => p__("Migachat", 'Token limit turned OFF permanantly for this chat id.'),
-                'chat_id' => $chat_id_for_limit,
             ];
         }
 
@@ -2480,14 +2443,37 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             'chat_id'  => $chatId,
         ]);
 
+        $resolvedMobile = $mobile !== '' ? $mobile : trim((string) $chatIdRecord->getUserMobile());
+        $mobile         = $resolvedMobile !== '' ? $resolvedMobile : '';
+
         $result = [
             'payload'     => null,
             'limit_state' => [
                 'chat_id_record'              => $chatIdRecord,
                 'requests_count'              => $chatIdRecord->getRequestsCount(),
                 'last_token_limit_reached_at' => $chatIdRecord->getLastTokenLimitReachedAt(),
+                'limit_off_allowlisted'       => false,
             ],
         ];
+
+        if ($mobile !== '' && $this->isMobileLimitOffAllowlisted($mobile)) {
+            if ($chatIdRecord->getId()) {
+                $chatIdRecord = (new Migachat_Model_ModelChatIds())->addData([
+                    'id'                          => $chatIdRecord->getId(),
+                    'requests_count'              => 0,
+                    'last_token_limit_reached_at' => null,
+                    'updated_at'                  => date('Y-m-d H:i:s'),
+                ])->save();
+
+                $result['limit_state']['chat_id_record']              = $chatIdRecord;
+                $result['limit_state']['requests_count']              = $chatIdRecord->getRequestsCount();
+                $result['limit_state']['last_token_limit_reached_at'] = $chatIdRecord->getLastTokenLimitReachedAt();
+            }
+
+            $result['limit_state']['limit_off_allowlisted'] = true;
+
+            return $result;
+        }
 
         if (! $chatIdRecord->getId()) {
             return $result;
@@ -2877,6 +2863,25 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         }
 
         return $request->getParams();
+    }
+
+    /**
+     * Determines whether the provided mobile has been explicitly allowlisted
+     * to bypass chat limits.
+     */
+    private function isMobileLimitOffAllowlisted($mobile)
+    {
+        if (! is_string($mobile) || $mobile === '') {
+            return false;
+        }
+
+        if ($this->limitOffAllowlist === null) {
+            $setting = new Migachat_Model_Setting();
+            $setting->find(1);
+            $this->limitOffAllowlist = $this->normalizeNumberList($setting->getLimitOffNumbers());
+        }
+
+        return in_array($mobile, $this->limitOffAllowlist, true);
     }
 
     /**

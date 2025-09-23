@@ -40,9 +40,6 @@ class Migachat_BridgeapiController extends Application_Controller_Default
 
                 $chat_id_limit_obj = new Migachat_Model_BridgrapiChatLimits();
                 $is_ai_turned_off  = $chat_id_limit_obj->find(['value_id' => $value_id, 'chat_id' => $chat_id, 'is_limit' => 0]);
-
-                $chat_id_limit_obj2  = new Migachat_Model_BridgrapiChatLimits();
-                $is_limit_turned_off = $chat_id_limit_obj2->find(['value_id' => $value_id, 'chat_id' => $chat_id, 'is_limit' => 1]);
                 $temp_blaclist       = new Migachat_Model_TemporaryBlaclist();
                 $is_temp_blaclist    = $temp_blaclist->find([
                     'value_id' => $value_id,
@@ -57,7 +54,6 @@ class Migachat_BridgeapiController extends Application_Controller_Default
                     "email"               => $chat_ids->getUserEmail(),
                     "mobile"              => $chat_ids->getUserMobile(),
                     "is_ai_turned_off"    => ($is_ai_turned_off->getId()) ? true : false,
-                    "is_limit_turned_off" => ($is_limit_turned_off->getId()) ? true : false,
                     "is_temp_blaclist"    => ($is_temp_blaclist->getId()) ? true : false,
                 ];
 
