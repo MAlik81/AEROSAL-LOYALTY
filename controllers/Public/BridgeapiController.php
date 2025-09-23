@@ -2165,20 +2165,45 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
         $threadId = $assistantContext['thread_id'] ?? null;
 
-        $messageToThread = $openai->addMessageToThread($threadId, 'user', $preparedMsg);
+        try {
+            $messageToThread = $openai->addMessageToThread($threadId, 'user', $preparedMsg);
+        } catch (Exception $exception) {
+            $this->logAssistantException($exception, 'addMessageToThread');
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
+        }
+
+        if ($errorPayload = $this->handleAssistantApiErrorResponse($messageToThread, 'addMessageToThread')) {
+            return $errorPayload;
+        }
+
         if (! isset($messageToThread['id'])) {
-            throw new Exception('Failed to add message to thread');
+            $this->logAssistantWarning('addMessageToThread', 'Missing message identifier in response', $messageToThread);
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
         }
 
         $assistantId = $assistantContext['assistant_id'] ?? null;
         if (empty($assistantId)) {
-            throw new Exception('Assistant ID is not set in chatbot settings');
+            $this->logAssistantWarning('runAssistantConversation', 'Assistant ID is missing in chatbot settings', $assistantContext);
+
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
         }
 
         $opts = $assistantContext['assistant_run_opts'] ?? [];
-        $run  = $openai->runThread($threadId, $assistantId, $opts);
+
+        try {
+            $run = $openai->runThread($threadId, $assistantId, $opts);
+        } catch (Exception $exception) {
+            $this->logAssistantException($exception, 'runThread');
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
+        }
+
+        if ($errorPayload = $this->handleAssistantApiErrorResponse($run, 'runThread')) {
+            return $errorPayload;
+        }
+
         if (! isset($run['id'])) {
-            throw new Exception('Failed to initiate assistant run');
+            $this->logAssistantWarning('runThread', 'Missing run identifier in response', $run);
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
         }
 
         $runId     = $run['id'];
@@ -2189,33 +2214,71 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         while (true) {
             usleep(600000);
 
-            $status = $openai->getRunStatus($threadId, $runId);
+            try {
+                $status = $openai->getRunStatus($threadId, $runId);
+            } catch (Exception $exception) {
+                $this->logAssistantException($exception, 'getRunStatus');
+                return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
+            }
+
+            if ($errorPayload = $this->handleAssistantApiErrorResponse($status, 'getRunStatus')) {
+                return $errorPayload;
+            }
+
             if (! isset($status['status'])) {
-                throw new Exception('Failed to get run status');
+                $this->logAssistantWarning('getRunStatus', 'Missing status value in response', $status);
+                return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
             }
 
             $runStatus = $status['status'];
 
             if ($runStatus === 'requires_action' && ! empty($status['required_action']['submit_tool_outputs'])) {
-                throw new Exception('Run requires tool outputs, but no tool handler is implemented.');
+                $this->logAssistantWarning('getRunStatus', 'Run requires tool outputs without an implemented handler', $status);
+                return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
             }
 
-            if (in_array($runStatus, ['completed', 'failed', 'cancelled', 'expired'])) {
+            if (in_array($runStatus, ['completed', 'failed', 'cancelled', 'expired'], true)) {
                 break;
             }
 
             if (time() > $deadline) {
-                throw new Exception("Run did not complete in time (last status: {$runStatus})");
+                $this->logAssistantWarning('getRunStatus', 'Run did not complete before deadline', ['last_status' => $runStatus]);
+                return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
             }
+        }
+
+        if ($runStatus !== 'completed') {
+            $lastError = $status['last_error'] ?? [];
+
+            if (is_array($lastError) && ! empty($lastError)) {
+                $this->logAssistantApiErrorDetails('runThreadStatus', $lastError, $status);
+                $friendlyMessage = $this->mapAssistantApiErrorCodeToMessage($lastError['code'] ?? null);
+            } else {
+                $this->logAssistantWarning('runThreadStatus', 'Run ended without completion', ['status' => $runStatus]);
+                $friendlyMessage = $this->mapAssistantApiErrorCodeToMessage(null);
+            }
+
+            return $this->assistantFailurePayload($friendlyMessage);
         }
 
         $promptTokens     = $status['usage']['prompt_tokens'] ?? 0;
         $completionTokens = $status['usage']['completion_tokens'] ?? 0;
         $totalTokens      = $status['usage']['total_tokens'] ?? 0;
 
-        $messages = $openai->getThreadMessages($threadId, ['order' => 'desc', 'limit' => 1]);
+        try {
+            $messages = $openai->getThreadMessages($threadId, ['order' => 'desc', 'limit' => 1]);
+        } catch (Exception $exception) {
+            $this->logAssistantException($exception, 'getThreadMessages');
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
+        }
+
+        if ($errorPayload = $this->handleAssistantApiErrorResponse($messages, 'getThreadMessages')) {
+            return $errorPayload;
+        }
+
         if (! isset($messages['data'][0])) {
-            throw new Exception('No messages found in thread');
+            $this->logAssistantWarning('getThreadMessages', 'No messages found in thread response', $messages);
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
         }
 
         $assistantResponse = $messages['data'][0]['content'][0]['text']['value'] ?? '[No response content]';
@@ -2585,6 +2648,87 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         (new Migachat_Model_Webservicelogs())->addData($data)->save();
 
         return $data;
+    }
+
+    private function mapAssistantApiErrorCodeToMessage($code)
+    {
+        if ($code === 'insufficient_quota') {
+            return '⚠️ Quota exceeded. Please check your billing plan or wait until it resets.';
+        }
+
+        if ($code === 'rate_limit_exceeded') {
+            return '⚠️ Too many requests. Please slow down and try again.';
+        }
+
+        return '⚠️ An unexpected error occurred. Please try again later.';
+    }
+
+    private function assistantFailurePayload($message)
+    {
+        return [false, $message, 0, 0, 0];
+    }
+
+    private function logAssistantApiErrorDetails($contextDescription, array $error, $fullResponse = [])
+    {
+        $type    = isset($error['type']) ? (string) $error['type'] : 'unknown';
+        $code    = isset($error['code']) ? (string) $error['code'] : 'unknown';
+        $message = isset($error['message']) ? (string) $error['message'] : 'No error message provided';
+
+        $logContext = [
+            'context' => $contextDescription,
+            'type'    => $type,
+            'code'    => $code,
+            'message' => $message,
+        ];
+
+        error_log('[Migachat Assistants API Error] ' . json_encode($logContext));
+
+        if (! in_array($code, ['insufficient_quota', 'rate_limit_exceeded'], true)) {
+            error_log('[Migachat Assistants API Error] Full response: ' . json_encode($fullResponse));
+        }
+    }
+
+    private function handleAssistantApiErrorResponse($response, $contextDescription)
+    {
+        if (! is_array($response)) {
+            $this->logAssistantWarning($contextDescription, 'Response was not an array', ['response' => $response]);
+
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
+        }
+
+        if (isset($response['error']) && $response['error']) {
+            $error = is_array($response['error']) ? $response['error'] : ['message' => (string) $response['error']];
+
+            $this->logAssistantApiErrorDetails($contextDescription, $error, $response);
+
+            $code = isset($error['code']) ? (string) $error['code'] : null;
+
+            return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage($code));
+        }
+
+        return null;
+    }
+
+    private function logAssistantException(Exception $exception, $contextDescription)
+    {
+        $logContext = [
+            'context' => $contextDescription,
+            'type'    => get_class($exception),
+            'message' => $exception->getMessage(),
+        ];
+
+        error_log('[Migachat Assistants API Error] Exception: ' . json_encode($logContext));
+    }
+
+    private function logAssistantWarning($contextDescription, $message, $extra = [])
+    {
+        $payload = [
+            'context' => $contextDescription,
+            'message' => $message,
+            'extra'   => $extra,
+        ];
+
+        error_log('[Migachat Assistants API Warning] ' . json_encode($payload));
     }
 
     /**

@@ -1122,20 +1122,77 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                             }
                         } else {
                             // add message to thread
-                            $message_to_thread = $openai->addMessageToThread($thread_id, 'user', $prompt);
-                            // dd($message_to_thread);
-                            if (! isset($message_to_thread['id'])) {
-                                throw new Exception("Failed to add message to thread");
+                            try {
+                                $message_to_thread = $openai->addMessageToThread($thread_id, 'user', $prompt);
+                            } catch (Exception $exception) {
+                                $this->logMobileAssistantException($exception, 'addMessageToThread');
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $this->mapAssistantApiErrorCodeToMessage(null),
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
                             }
+
+                            if ($failurePayload = $this->handleMobileAssistantErrorResponse(
+                                $message_to_thread,
+                                'addMessageToThread',
+                                $value_id,
+                                $data,
+                                $chatlogs_obj,
+                                $chatlog_data,
+                                $lastInsertId
+                            )) {
+                                return $this->_sendJson($failurePayload);
+                            }
+
+                            if (! isset($message_to_thread['id'])) {
+                                $this->logMobileAssistantWarning('addMessageToThread', 'Missing message identifier in response', $message_to_thread);
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $this->mapAssistantApiErrorCodeToMessage(null),
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
+                            }
+
                             $assistant_id = $app_setting_obj->getAssistantId();
                             if (empty($assistant_id)) {
-                                throw new Exception("Assistant ID is not set in chatbot settings");
+                                $this->logMobileAssistantWarning('runThread', 'Assistant ID is not set in chatbot settings', []);
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $this->mapAssistantApiErrorCodeToMessage(null),
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
                             }
 
                             // Migachat_Model_Assistants
                             $assistant = (new Migachat_Model_Assistants())->find(['assistant_id' => $assistant_id]);
                             if (! $assistant->getId()) {
-                                throw new Exception("Assistant not found with ID: " . $assistant_id);
+                                $this->logMobileAssistantWarning('runThread', 'Assistant not found for provided ID', ['assistant_id' => $assistant_id]);
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $this->mapAssistantApiErrorCodeToMessage(null),
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
                             }
                             $file_ids = $assistant->getOpenaiFileIds();
                             // 3. Run the assistant (with vector store if needed)
@@ -1156,17 +1213,47 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                                     ],
                                 ];
                             }
-                            $run = $openai->runThread($thread_id, $assistant_id, $opts);
+
+                            try {
+                                $run = $openai->runThread($thread_id, $assistant_id, $opts);
+                            } catch (Exception $exception) {
+                                $this->logMobileAssistantException($exception, 'runThread');
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $this->mapAssistantApiErrorCodeToMessage(null),
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
+                            }
+
+                            if ($failurePayload = $this->handleMobileAssistantErrorResponse(
+                                $run,
+                                'runThread',
+                                $value_id,
+                                $data,
+                                $chatlogs_obj,
+                                $chatlog_data,
+                                $lastInsertId
+                            )) {
+                                return $this->_sendJson($failurePayload);
+                            }
 
                             if (! isset($run['id'])) {
-                                //     dd($run,[
-                                //     'tool_resources' => [
-                                //         'file_search' => [
-                                //             'vector_store_ids' => is_string($file_ids) ? json_decode($file_ids, true) : ($file_ids ? $file_ids : [])
-                                //         ]
-                                //     ]
-                                // ]);
-                                throw new Exception("Failed to initiate assistant run");
+                                $this->logMobileAssistantWarning('runThread', 'Missing run identifier in response', $run);
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $this->mapAssistantApiErrorCodeToMessage(null),
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
                             }
                             $run_id = $run['id'];
 
@@ -1177,24 +1264,121 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
 
                             do {
                                 sleep(2);
-                                $status = $openai->getRunStatus($thread_id, $run_id);
+
+                                try {
+                                    $status = $openai->getRunStatus($thread_id, $run_id);
+                                } catch (Exception $exception) {
+                                    $this->logMobileAssistantException($exception, 'getRunStatus');
+                                    $payload = $this->finalizeMobileAssistantFailure(
+                                        $this->mapAssistantApiErrorCodeToMessage(null),
+                                        $value_id,
+                                        $data,
+                                        $chatlogs_obj,
+                                        $chatlog_data,
+                                        $lastInsertId
+                                    );
+
+                                    return $this->_sendJson($payload);
+                                }
+
+                                if ($failurePayload = $this->handleMobileAssistantErrorResponse(
+                                    $status,
+                                    'getRunStatus',
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                )) {
+                                    return $this->_sendJson($failurePayload);
+                                }
 
                                 if (! isset($status['status'])) {
-                                    throw new Exception("Failed to get run status");
+                                    $this->logMobileAssistantWarning('getRunStatus', 'Missing status value in response', $status);
+                                    $payload = $this->finalizeMobileAssistantFailure(
+                                        $this->mapAssistantApiErrorCodeToMessage(null),
+                                        $value_id,
+                                        $data,
+                                        $chatlogs_obj,
+                                        $chatlog_data,
+                                        $lastInsertId
+                                    );
+
+                                    return $this->_sendJson($payload);
                                 }
 
                                 $run_status = $status['status'];
                                 $tries++;
                             } while ($run_status !== 'completed' && $run_status !== 'failed' && $tries < $maxTries);
 
+                            if ($run_status !== 'completed') {
+                                $lastError = $status['last_error'] ?? [];
+
+                                if (is_array($lastError) && ! empty($lastError)) {
+                                    $this->logMobileAssistantApiErrorDetails('runThreadStatus', $lastError, $status);
+                                    $friendlyMessage = $this->mapAssistantApiErrorCodeToMessage($lastError['code'] ?? null);
+                                } else {
+                                    $this->logMobileAssistantWarning('runThreadStatus', 'Run ended without completion', ['status' => $run_status]);
+                                    $friendlyMessage = $this->mapAssistantApiErrorCodeToMessage(null);
+                                }
+
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $friendlyMessage,
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
+                            }
+
                             $promptTokens     = $status['usage']['prompt_tokens'] ?? 0;
                             $completionTokens = $status['usage']['completion_tokens'] ?? 0;
                             $totalTokens      = $status['usage']['total_tokens'] ?? 0;
                             // 5. Retrieve final messages
 
-                            $messages = $openai->getThreadMessages($thread_id, ['order' => 'desc', 'limit' => 1]);
+                            try {
+                                $messages = $openai->getThreadMessages($thread_id, ['order' => 'desc', 'limit' => 1]);
+                            } catch (Exception $exception) {
+                                $this->logMobileAssistantException($exception, 'getThreadMessages');
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $this->mapAssistantApiErrorCodeToMessage(null),
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
+                            }
+
+                            if ($failurePayload = $this->handleMobileAssistantErrorResponse(
+                                $messages,
+                                'getThreadMessages',
+                                $value_id,
+                                $data,
+                                $chatlogs_obj,
+                                $chatlog_data,
+                                $lastInsertId
+                            )) {
+                                return $this->_sendJson($failurePayload);
+                            }
+
                             if (! isset($messages['data'][0])) {
-                                throw new Exception("No messages found in thread");
+                                $this->logMobileAssistantWarning('getThreadMessages', 'No messages found in thread response', $messages);
+                                $payload = $this->finalizeMobileAssistantFailure(
+                                    $this->mapAssistantApiErrorCodeToMessage(null),
+                                    $value_id,
+                                    $data,
+                                    $chatlogs_obj,
+                                    $chatlog_data,
+                                    $lastInsertId
+                                );
+
+                                return $this->_sendJson($payload);
                             }
 
                             $assistant_response = $messages['data'][0]['content'][0]['text']['value'] ?? '[No response content]';
@@ -1379,6 +1563,131 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
 
         $this->_sendJson($payload);
     }
+
+    private function mapAssistantApiErrorCodeToMessage($code)
+    {
+        if ($code === 'insufficient_quota') {
+            return '⚠️ Quota exceeded. Please check your billing plan or wait until it resets.';
+        }
+
+        if ($code === 'rate_limit_exceeded') {
+            return '⚠️ Too many requests. Please slow down and try again.';
+        }
+
+        return '⚠️ An unexpected error occurred. Please try again later.';
+    }
+
+    private function finalizeMobileAssistantFailure($friendlyMessage, $valueId, $data, $chatlogs_obj, array $chatlogData, $lastInsertId)
+    {
+        if ($lastInsertId && method_exists($lastInsertId, 'getId') && $lastInsertId->getId()) {
+            $chatlogData['migachat_chatlog_id'] = $lastInsertId->getId();
+        }
+
+        $chatlogData['is_sent']           = 0;
+        $chatlogData['has_error']         = 1;
+        $chatlogData['error_description'] = $friendlyMessage;
+        $chatlogData['updated_at']        = date('Y-m-d H:i:s');
+
+        $chatlogs_obj->addData($chatlogData)->save();
+
+        $payload = [
+            'success' => false,
+            'message' => $friendlyMessage,
+        ];
+
+        $errorArray = [
+            'value_id'          => $valueId,
+            'has_error'         => 1,
+            'error_description' => $friendlyMessage,
+            'platform'          => 'app_chatgpt',
+            'customer_id'       => isset($data['customer_id']) ? $data['customer_id'] : null,
+            'message'           => (isset($data['message']) ? $data['message'] : '') . '<br><br><br>' . $friendlyMessage,
+            'message_id'        => ($lastInsertId && method_exists($lastInsertId, 'getId')) ? $lastInsertId->getId() : null,
+            'created_at'        => date('Y-m-d'),
+        ];
+
+        (new Migachat_Model_Webservicelogs())->addData($errorArray)->save();
+
+        return $payload;
+    }
+
+    private function handleMobileAssistantErrorResponse($response, $contextDescription, $valueId, $data, $chatlogs_obj, array $chatlogData, $lastInsertId)
+    {
+        if (! is_array($response)) {
+            $this->logMobileAssistantWarning($contextDescription, 'Response was not an array', ['response' => $response]);
+
+            return $this->finalizeMobileAssistantFailure(
+                $this->mapAssistantApiErrorCodeToMessage(null),
+                $valueId,
+                $data,
+                $chatlogs_obj,
+                $chatlogData,
+                $lastInsertId
+            );
+        }
+
+        if (isset($response['error']) && $response['error']) {
+            $error = is_array($response['error']) ? $response['error'] : ['message' => (string) $response['error']];
+
+            $this->logMobileAssistantApiErrorDetails($contextDescription, $error, $response);
+
+            $code = isset($error['code']) ? (string) $error['code'] : null;
+
+            return $this->finalizeMobileAssistantFailure(
+                $this->mapAssistantApiErrorCodeToMessage($code),
+                $valueId,
+                $data,
+                $chatlogs_obj,
+                $chatlogData,
+                $lastInsertId
+            );
+        }
+
+        return null;
+    }
+
+    private function logMobileAssistantApiErrorDetails($contextDescription, array $error, $fullResponse = [])
+    {
+        $type    = isset($error['type']) ? (string) $error['type'] : 'unknown';
+        $code    = isset($error['code']) ? (string) $error['code'] : 'unknown';
+        $message = isset($error['message']) ? (string) $error['message'] : 'No error message provided';
+
+        $logContext = [
+            'context' => $contextDescription,
+            'type'    => $type,
+            'code'    => $code,
+            'message' => $message,
+        ];
+
+        error_log('[Migachat Mobile Assistants API Error] ' . json_encode($logContext));
+
+        if (! in_array($code, ['insufficient_quota', 'rate_limit_exceeded'], true)) {
+            error_log('[Migachat Mobile Assistants API Error] Full response: ' . json_encode($fullResponse));
+        }
+    }
+
+    private function logMobileAssistantWarning($contextDescription, $message, $extra = [])
+    {
+        $payload = [
+            'context' => $contextDescription,
+            'message' => $message,
+            'extra'   => $extra,
+        ];
+
+        error_log('[Migachat Mobile Assistants API Warning] ' . json_encode($payload));
+    }
+
+    private function logMobileAssistantException(Exception $exception, $contextDescription)
+    {
+        $logContext = [
+            'context' => $contextDescription,
+            'type'    => get_class($exception),
+            'message' => $exception->getMessage(),
+        ];
+
+        error_log('[Migachat Mobile Assistants API Error] Exception: ' . json_encode($logContext));
+    }
+
     public function removeEmojis($string)
     {
         return preg_replace('/\p{So}+/u', '', $string);
