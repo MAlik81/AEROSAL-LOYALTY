@@ -800,54 +800,6 @@ class Migachat_Public_BridgeapiControllerBU extends Migachat_Controller_Default
                             exit;
                         }
                     }
-                    if (strtolower($message) == '##limitoff##' && false) {
-                        $chat_id_limit_obj   = new Migachat_Model_BridgrapiChatLimits();
-                        $is_limit_turned_off = $chat_id_limit_obj->find(['value_id' => $value_id, 'chat_id' => $chat_id_for_limit, 'is_limit' => 1]);
-                        if (! $is_limit_turned_off->getId()) {
-                            $chat_id_limit_data = [
-                                'value_id'     => $value_id,
-                                'chat_id'      => $chat_id_for_limit,
-                                'is_limit'     => 1,
-                                'limit_off_at' => date('Y-m-d H:i:s'),
-                                'created_at'   => date('Y-m-d H:i:s'),
-                                'updated_at'   => date('Y-m-d H:i:s'),
-                            ];
-
-                            $blacklisted_numbers = "";
-                            $setting             = new Migachat_Model_Setting();
-                            $setting->find(1);
-                            $blacklisted_numbers = $setting->getBlacklistedNumbers();
-                            $blacklisted_numbers = ',' . trim($blacklisted_numbers, ',') . ',';                 // normalize with commas around
-                            $blacklisted_numbers = str_replace(',' . $mobile . ',', ',', $blacklisted_numbers); // remove safely
-                            $blacklisted_numbers = trim($blacklisted_numbers, ',');                             // clean up again
-                            $setting->setBlacklistedNumbers($blacklisted_numbers)->save();
-
-                            if ((new Migachat_Model_BridgrapiChatLimits())->addData($chat_id_limit_data)->save()) {
-                                $payload = [
-                                    'success' => true,
-                                    'message' => p__("Migachat", 'Token limit turned OFF permanantly for this chat id.'),
-                                    'chat_id' => $chat_id_for_limit,
-                                ];
-                            } else {
-                                $payload = [
-                                    'success' => true,
-                                    'message' => p__("Migachat", 'Error while turning OFF the limit for this chat id.'),
-                                    'chat_id' => $chat_id_for_limit,
-                                ];
-                            }
-                            return $this->_sendJson($payload);
-                            exit;
-                        } else {
-                            $payload = [
-                                'success' => true,
-                                'message' => p__("Migachat", 'Token limit turned OFF permanantly for this chat id.'),
-                                'chat_id' => $chat_id_for_limit,
-                            ];
-                            return $this->_sendJson($payload);
-                            exit;
-                        }
-                    }
-
                 }
                 // check ovelall tokens limit here
 

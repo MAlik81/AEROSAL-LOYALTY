@@ -763,10 +763,6 @@ msgid "AI is disabled"
 msgstr "AI disabilitata"
 
 msgctxt "Migachat"
-msgid "Limit is disabled"
-msgstr "Limite disabilitato"
-
-msgctxt "Migachat"
 msgid "AI turned OFF for this chat id, untill it is turned back ON"
 msgstr "AI disattivata per questo ID chat, fino a nuova attivazione"
 

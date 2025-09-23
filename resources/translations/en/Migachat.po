@@ -1460,12 +1460,6 @@ msgid "AI is disabled"
 msgstr "AI is disabled"
 
 
-# GMT 1558015700.600
-msgctxt "Migachat"
-msgid "Limit is disabled"
-msgstr "Limit is disabled"
-
-
 .
 # GMT 1558015700.600
 msgctxt "Migachat"
