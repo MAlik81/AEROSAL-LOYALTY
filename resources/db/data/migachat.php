@@ -13,6 +13,21 @@ $quries = [
     `updated_at` = VALUES(`updated_at`);",
     "UPDATE `migachat_operator_settings` SET `default_language` = 'it' WHERE `default_language` IS NULL OR TRIM(`default_language`) = '';",
     
+    "UPDATE `migachat_app_settings`
+        SET `gpt_model` = 'gpt-4o-mini'
+        WHERE `gpt_model` IS NULL
+            OR `gpt_model` = ''
+            OR `gpt_model` LIKE 'gpt-3.5%';",
+    "UPDATE `migachat_app_settings`
+        SET `system_prompt_limit` = 32000,
+            `total_prompt_limit`   = 64000
+        WHERE (`system_prompt_limit` IS NULL OR `system_prompt_limit` <= 4000)
+            AND (`total_prompt_limit` IS NULL OR `total_prompt_limit` <= 8000);",
+    "UPDATE `migachat_bridge_api_settings`
+        SET `ai_answer_token_limit` = 4000
+        WHERE `ai_answer_token_limit` IS NULL
+            OR `ai_answer_token_limit` = 0
+            OR `ai_answer_token_limit` <= 1000;",
 ];
 
 foreach ($quries as $key => $query) {
@@ -24,7 +39,6 @@ foreach ($quries as $key => $query) {
     }
 
 }
-// "UPDATE `migachat_app_settings` SET `gpt_model`='gpt-4o-mini' WHERE gpt_model LIKE 'gpt-3.5%'",
 // "UPDATE `migachat_operator_settings`
 // SET `ask_call_from_operator_msg`=\"Ti piacerebbe essere contattato da uno dei nostri operatori? (Rispondi solo con 'Sì' o 'No')
 // <br>

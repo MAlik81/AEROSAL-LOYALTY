@@ -47,3 +47,4 @@
 # 1.3.26 - Solved issue of threads run taking to long.
 # 1.3.27 - Solved issue of Assistant form saving.
 # 1.3.31 - Added default Language
+# 1.3.32 - Automatically migrates legacy GPT-3.5 defaults to GPT-4o Mini and raises token limits for upgraded installs.
