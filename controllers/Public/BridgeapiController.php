@@ -629,7 +629,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
                 // bridge api tokens setup
                 $chatid_duration = ($bridge_obj->getUserDuration()) ? $bridge_obj->getUserDuration() : 60;
-                $chatid_tokens   = ($bridge_obj->getUserLimit()) ? $bridge_obj->getUserLimit() : 100000;
+                $chatid_tokens   = ($bridge_obj->getUserLimit()) ? $bridge_obj->getUserLimit() : 200000;
 
                 $chatControlPayload = $this->handleChatControlCommands($params, $message, $value_id);
                 if (null !== $chatControlPayload) {
@@ -1057,7 +1057,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
     private function enforceGlobalTokenLimit($value_id, Migachat_Model_BridgeAPISettings $bridgeSettings, $conversationTotals = null)
     {
         $overallDuration = $bridgeSettings->getOverallDuration() ? $bridgeSettings->getOverallDuration() : 24;
-        $overallLimit    = $bridgeSettings->getOverallLimit() ? $bridgeSettings->getOverallLimit() : 2500000;
+        $overallLimit    = $bridgeSettings->getOverallLimit() ? $bridgeSettings->getOverallLimit() : 5000000;
 
         if (null === $conversationTotals) {
             $conversationTotals = (new Migachat_Model_BridgeAPI())->getOverAllTokens($value_id, $overallDuration);

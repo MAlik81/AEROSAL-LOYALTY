@@ -701,9 +701,9 @@ class Migachat_Public_BridgeapiControllerBU extends Migachat_Controller_Default
                 }
                 // bridge api tokens setup
                 $over_all_duration = ($bridge_obj->getOverallDuration()) ? $bridge_obj->getOverallDuration() : 24;
-                $over_tokens       = ($bridge_obj->getOverallLimit()) ? $bridge_obj->getOverallLimit() : 2500000;
+                $over_tokens       = ($bridge_obj->getOverallLimit()) ? $bridge_obj->getOverallLimit() : 5000000;
                 $chatid_duration   = ($bridge_obj->getUserDuration()) ? $bridge_obj->getUserDuration() : 60;
-                $chatid_tokens     = ($bridge_obj->getUserLimit()) ? $bridge_obj->getUserLimit() : 100000;
+                $chatid_tokens     = ($bridge_obj->getUserLimit()) ? $bridge_obj->getUserLimit() : 200000;
 
                 // check if bridge api is disabled
                 if ($bridge_obj->getDisableApi()) {
