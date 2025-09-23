@@ -9,7 +9,7 @@ class Migachat_Model_Db_Table_ModelTokens extends Core_Model_Db_Table
         $k8 = array('gpt-4', 'gpt-4-0613', 'gpt-4-0314', 'code-davinci-002');
         $k16 = array('gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613');
         $k32 = array('gpt-4-32k', 'gpt-4-32k-0613', 'gpt-4-32k-0314', 'code-davinci-002');
-        $k128 = array('gpt-4-1106-preview', 'gpt-4-vision-preview','chatgpt-4o-latest','gpt-4o-mini-2024-07-18','gpt-4o-mini','gpt-4o-2024-08-06','gpt-4o-2024-05-13','gpt-4o');
+        $k128 = array('gpt-4o-mini', 'gpt-4-vision-preview','chatgpt-4o-latest','gpt-4o-mini-2024-07-18','gpt-4o-2024-08-06','gpt-4o-2024-05-13','gpt-4o');
         $token_limit_percent = 20;
         $complete_tokens = 4000;
 
@@ -52,7 +52,7 @@ class Migachat_Model_Db_Table_ModelTokens extends Core_Model_Db_Table
         $k8 = array('gpt-4', 'gpt-4-0613', 'gpt-4-0314', 'code-davinci-002');
         $k16 = array('gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613');
         $k32 = array('gpt-4-32k', 'gpt-4-32k-0613', 'gpt-4-32k-0314', 'code-davinci-002');
-        $k128 = array('gpt-4-1106-preview', 'gpt-4-vision-preview','chatgpt-4o-latest','gpt-4o-mini-2024-07-18','gpt-4o-mini','gpt-4o-2024-08-06','gpt-4o-2024-05-13','gpt-4o');
+        $k128 = array('gpt-4o-mini', 'gpt-4-vision-preview','chatgpt-4o-latest','gpt-4o-mini-2024-07-18','gpt-4o-2024-08-06','gpt-4o-2024-05-13','gpt-4o');
         $token_limit_percent = 75;
         $complete_tokens = 4000;
         $history_messages=15;

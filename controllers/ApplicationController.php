@@ -23,7 +23,7 @@ class Migachat_ApplicationController extends Application_Controller_Default
                             'https://api.openai.com/v1/models',
                             $received_request['secret_key'],
                             $received_request['organization_id'],
-                            'gpt-4-1106-preview'
+                            'gpt-4o-mini'
                         );
 
                         // Get the available models
@@ -79,7 +79,7 @@ class Migachat_ApplicationController extends Application_Controller_Default
             'https://api.openai.com/v1/chat/completions',
             $api_key,
             $organizationId,
-            'gpt-4-1106-preview'
+            'gpt-4o-mini'
         );
 
         // Generate a response
@@ -263,7 +263,7 @@ class Migachat_ApplicationController extends Application_Controller_Default
                             $secret_key = $setting_obj->getSecretKey();
                             $organization_id = $setting_obj->getOrganizationId();
 
-                            $gpt_model = 'gpt-4-1106-preview';
+                            $gpt_model = 'gpt-4o-mini';
                             $chatAPI = new Migachat_Model_ChatGPTAPI($apiUrl, $secret_key, $organization_id, $gpt_model);
 
                             $all_conversation[] = array(
@@ -562,7 +562,7 @@ class Migachat_ApplicationController extends Application_Controller_Default
                         $app_setting_obj->find([
                             'value_id' => $value_id
                         ]);
-                        $gpt_model = 'gpt-4-1106-preview';
+                        $gpt_model = 'gpt-4o-mini';
                         // if ($app_setting_obj->getGptModel()) {
                         //     $gpt_model = $app_setting_obj->getGptModel();
                         // }
@@ -639,7 +639,7 @@ class Migachat_ApplicationController extends Application_Controller_Default
                         $app_setting_obj->find([
                             'value_id' => $value_id
                         ]);
-                        $gpt_model = 'gpt-4-1106-preview';
+                        $gpt_model = 'gpt-4o-mini';
                         // if ($app_setting_obj->getGptModel()) {
                         //     $gpt_model = $app_setting_obj->getGptModel();
                         // }
