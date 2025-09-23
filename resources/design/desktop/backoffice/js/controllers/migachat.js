@@ -9,6 +9,7 @@ App.config(function ($routeProvider) {
   $scope.header.button.left.is_visible = false;
 
   $scope.form_loader_is_visible = false;
+  $scope.form_loader_limit_off_is_visible = false;
 
   $scope.license = null;
 
@@ -17,6 +18,9 @@ App.config(function ($routeProvider) {
   $scope.history.history_duration = 3;
   $scope.blacklisted = {};
   $scope.blacklisted.blacklisted_numbers = '';
+  $scope.limitOff = {};
+  $scope.limitOff.mobile = '';
+  $scope.limitOffNumbers = [];
   $scope.loadLicense = function () {
     Migachat.loadLicense().success(function (data) {
       $scope.header.title = data.title;
@@ -202,6 +206,90 @@ App.config(function ($routeProvider) {
   };
 
 
+  $scope.loadLimitOffNumbers = function () {
+    Migachat.loadLimitOffNumbers().success(function (data) {
+      if (angular.isObject(data) && angular.isDefined(data.limit_off_numbers)) {
+        $scope.limitOffNumbers = data.limit_off_numbers;
+      } else {
+        $scope.limitOffNumbers = [];
+      }
+    });
+  };
+
+  $scope.addLimitOffNumber = function () {
+    $scope.form_loader_limit_off_is_visible = true;
+    Migachat.addLimitOffNumber({ mobile: $scope.limitOff.mobile })
+      .success(function (data) {
+        var message = Label.save.error;
+        if (angular.isObject(data) && angular.isDefined(data.message)) {
+          message = data.message;
+          if (data.success) {
+            $scope.message.isError(false);
+            if (
+              angular.isObject(data.data) &&
+              angular.isDefined(data.data.limit_off_numbers)
+            ) {
+              $scope.limitOffNumbers = data.data.limit_off_numbers;
+            }
+            $scope.limitOff.mobile = '';
+          } else {
+            $scope.message.isError(true);
+          }
+        } else {
+          $scope.message.isError(true);
+        }
+
+        $scope.message.setText(message).show();
+      })
+      .error(function (data) {
+        var message = Label.save.error;
+        if (angular.isObject(data) && angular.isDefined(data.message)) {
+          message = data.message;
+        }
+        $scope.message.setText(message).isError(true).show();
+      })
+      .finally(function () {
+        $scope.form_loader_limit_off_is_visible = false;
+      });
+  };
+
+  $scope.deleteLimitOffNumber = function (mobile) {
+    $scope.form_loader_limit_off_is_visible = true;
+    Migachat.deleteLimitOffNumber({ mobile: mobile })
+      .success(function (data) {
+        var message = Label.save.error;
+        if (angular.isObject(data) && angular.isDefined(data.message)) {
+          message = data.message;
+          if (data.success) {
+            $scope.message.isError(false);
+            if (
+              angular.isObject(data.data) &&
+              angular.isDefined(data.data.limit_off_numbers)
+            ) {
+              $scope.limitOffNumbers = data.data.limit_off_numbers;
+            }
+          } else {
+            $scope.message.isError(true);
+          }
+        } else {
+          $scope.message.isError(true);
+        }
+
+        $scope.message.setText(message).show();
+      })
+      .error(function (data) {
+        var message = Label.save.error;
+        if (angular.isObject(data) && angular.isDefined(data.message)) {
+          message = data.message;
+        }
+        $scope.message.setText(message).isError(true).show();
+      })
+      .finally(function () {
+        $scope.form_loader_limit_off_is_visible = false;
+      });
+  };
+
+
   $scope.model_limit = {};
   $scope.loadGPTModels = function () {
     Migachat.loadGPTModels().success(function (data) {
@@ -246,5 +334,6 @@ App.config(function ($routeProvider) {
   $scope.loadHistoryLimit();
   $scope.loadAppLicenses();
   $scope.loadCronInfo();
+  $scope.loadLimitOffNumbers();
   $scope.loadGPTModels();
 });

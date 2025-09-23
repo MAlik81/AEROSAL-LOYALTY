@@ -143,6 +143,117 @@ class Migachat_Backoffice_MigachatController extends Backoffice_Controller_Defau
         }
         $this->_sendHtml($data);
     }
+
+    public function loadlimitoffnumbersAction()
+    {
+        $setting = new Migachat_Model_Setting();
+        $setting->find(1);
+
+        $numbers = $this->normalizePhoneList($setting->getLimitOffNumbers());
+
+        $this->_sendHtml([
+            'limit_off_numbers' => $numbers,
+        ]);
+    }
+
+    public function addlimitoffnumberAction()
+    {
+        $response = [];
+        if ($data = Siberian_Json::decode($this->getRequest()->getRawBody())) {
+            try {
+                if (empty($data['mobile'])) {
+                    throw new Exception(p__("Migachat", 'Mobile number cannot be empty.'));
+                }
+
+                $mobile = trim($data['mobile']);
+                if (! $this->isValidInternationalMobile($mobile)) {
+                    throw new Exception(p__("Migachat", 'Invalid mobile number format. Use the international format starting with +.'));
+                }
+
+                $setting = new Migachat_Model_Setting();
+                $setting->find(1);
+
+                $numbers = $this->normalizePhoneList($setting->getLimitOffNumbers());
+                if (in_array($mobile, $numbers, true)) {
+                    throw new Exception(p__("Migachat", 'Mobile number is already allowlisted.'));
+                }
+
+                $numbers[] = $mobile;
+                sort($numbers);
+
+                $payload = [
+                    'limit_off_numbers' => implode(',', $numbers),
+                ];
+
+                if ($setting->getMigachatSettingId()) {
+                    $payload['migachat_setting_id'] = $setting->getMigachatSettingId();
+                }
+
+                $setting->setData($payload)->save();
+
+                $response = [
+                    'success' => 1,
+                    'data'    => ['limit_off_numbers' => $numbers],
+                    'message' => p__("Migachat", 'Allowlist number added successfully.'),
+                ];
+            } catch (Exception $e) {
+                $response = [
+                    'error'   => 1,
+                    'message' => $e->getMessage(),
+                ];
+            }
+
+            return $this->_sendHtml($response);
+        }
+
+        return $this->_sendHtml($response);
+    }
+
+    public function deletelimitoffnumberAction()
+    {
+        $response = [];
+        if ($data = Siberian_Json::decode($this->getRequest()->getRawBody())) {
+            try {
+                if (empty($data['mobile'])) {
+                    throw new Exception(p__("Migachat", 'Mobile number cannot be empty.'));
+                }
+
+                $mobile = trim($data['mobile']);
+                $setting = new Migachat_Model_Setting();
+                $setting->find(1);
+
+                $numbers = $this->normalizePhoneList($setting->getLimitOffNumbers());
+                $numbers = array_values(array_filter($numbers, static function ($item) use ($mobile) {
+                    return $item !== $mobile;
+                }));
+
+                $payload = [
+                    'limit_off_numbers' => $numbers ? implode(',', $numbers) : null,
+                ];
+
+                if ($setting->getMigachatSettingId()) {
+                    $payload['migachat_setting_id'] = $setting->getMigachatSettingId();
+                }
+
+                $setting->setData($payload)->save();
+
+                $response = [
+                    'success' => 1,
+                    'data'    => ['limit_off_numbers' => $numbers],
+                    'message' => p__("Migachat", 'Allowlist number removed successfully.'),
+                ];
+            } catch (Exception $e) {
+                $response = [
+                    'error'   => 1,
+                    'message' => $e->getMessage(),
+                ];
+            }
+
+            return $this->_sendHtml($response);
+        }
+
+        return $this->_sendHtml($response);
+    }
     public function loadgptmodelsAction()
     {
         $apiUrl = 'https://api.openai.com/v1/models';
@@ -228,5 +339,34 @@ class Migachat_Backoffice_MigachatController extends Backoffice_Controller_Defau
             $this->_sendHtml($data);
         }
         $this->_sendHtml($data);
+    }
+
+    private function normalizePhoneList($numbers)
+    {
+        if (! $numbers) {
+            return [];
+        }
+
+        if (! is_array($numbers)) {
+            $numbers = str_replace([';', "\r\n", "\n", "\r"], ',', $numbers);
+            $numbers = preg_split('/[,\s]+/', $numbers);
+        }
+
+        if (! is_array($numbers)) {
+            return [];
+        }
+
+        $numbers = array_map(static function ($item) {
+            return trim($item);
+        }, $numbers);
+
+        return array_values(array_filter($numbers, static function ($item) {
+            return $item !== '';
+        }));
+    }
+
+    private function isValidInternationalMobile($mobile)
+    {
+        return (bool) preg_match('/^\+[0-9]{9,}$/', $mobile);
     }
 }

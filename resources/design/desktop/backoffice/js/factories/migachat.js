@@ -158,13 +158,54 @@ App.factory('Migachat', function($http, Url) {
       factory.saveBlacklistedNumbers = function (numbers) {
         return $http({
           method: "POST",
-    
+
           data: numbers,
-    
+
           url: Url.get("migachat/backoffice_migachat/saveblacklistednumbers"),
-    
+
           cache: false,
-    
+
+          responseType: "json",
+        });
+      };
+
+
+      factory.loadLimitOffNumbers = function () {
+        return $http({
+          method: "GET",
+
+          url: Url.get("migachat/backoffice_migachat/loadlimitoffnumbers"),
+
+          cache: true,
+
+          responseType: "json",
+        });
+      };
+
+      factory.addLimitOffNumber = function (payload) {
+        return $http({
+          method: "POST",
+
+          data: payload,
+
+          url: Url.get("migachat/backoffice_migachat/addlimitoffnumber"),
+
+          cache: false,
+
+          responseType: "json",
+        });
+      };
+
+      factory.deleteLimitOffNumber = function (payload) {
+        return $http({
+          method: "POST",
+
+          data: payload,
+
+          url: Url.get("migachat/backoffice_migachat/deletelimitoffnumber"),
+
+          cache: false,
+
           responseType: "json",
         });
       };

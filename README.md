@@ -48,3 +48,10 @@
 # 1.3.27 - Solved issue of Assistant form saving.
 # 1.3.31 - Added default Language
 # 1.3.32 - Automatically migrates legacy GPT-3.5 defaults to GPT-4o Mini and raises token limits for upgraded installs.
+
+## Limit-off allowlist workflow
+
+1. Open the backoffice Migachat card and locate the **Limit-off allowlist** section.
+2. Add new phone numbers in international format (e.g., `+391234567890`) to let them bypass per-chat token limits without touching the blacklist.
+3. Use the inline list to review or remove previously allowlisted numbers when access should be revoked.
+4. Remember that blacklist rules are still enforced first—remove a number from the blacklist if it should benefit from the allowlist exemption.

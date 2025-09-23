@@ -360,7 +360,6 @@ $(document).ready(function() {
     $("#api_chat_archive_table_body").html("");
     $("#api_chat_archive_ai_on").hide();
     $("#api_chat_archive_ai_off").hide();
-    $("#api_chat_archive_limit_off").hide();
     $("#temporary_blacklist_msg").hide();
     $("#temporary_blacklist_user").hide();
     $("#delete_bridge_chat_history").hide();
@@ -411,9 +410,6 @@ $(document).ready(function() {
             $("#temporary_blacklist_msg").hide();
             $("#temporary_blacklist_user").show();
           }
-          if (response.is_limit_turned_off) {
-            $("#api_chat_archive_limit_off").show();
-          }
           var table_rows = "";
           for (var i = 0; i < response.chatlogs.length; i++) {
             var row = response.chatlogs[i];
@@ -449,7 +445,6 @@ $(document).ready(function() {
 
     $("#api_chat_archive_ai_on").hide();
     $("#api_chat_archive_ai_off").hide();
-    $("#api_chat_archive_limit_off").hide();
     $.ajax({
       url: "/migachat/bridgeapi/downloadcsv",
       method: "POST",
