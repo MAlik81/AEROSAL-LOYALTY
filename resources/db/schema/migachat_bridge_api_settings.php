@@ -43,7 +43,7 @@ $schemas['migachat_bridge_api_settings'] = [
     ],
     'overall_limit' => [
         'type' => 'int(11) unsigned',
-        'default' => '2500000'
+        'default' => '5000000'
     ],
     'user_duration' => [
         'type' => 'int(11) unsigned',
@@ -51,7 +51,7 @@ $schemas['migachat_bridge_api_settings'] = [
     ],
     'user_limit' => [
         'type' => 'int(11) unsigned',
-        'default' => '100000'
+        'default' => '200000'
     ],
     'user_chat_limit_responce' => [
         'type' => 'longtext',
