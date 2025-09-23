@@ -1274,7 +1274,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         if (! $isPositive) {
             $prompt             = "I asked to the user this: $question. The answer is this one : $text. Please analyze if the answer means Positive or Negitive, and give me the result with simple  positive (1) or negative (0).If unsure not sure about anything return 0. Provide only 1 or 0.do not add any explainations, just return 1 or 0.";
             $apiUrl             = 'https://api.openai.com/v1/chat/completions';
-            $gpt_model          = 'gpt-4-1106-preview';
+            $gpt_model          = 'gpt-4o-mini';
             $chatAPI            = new Migachat_Model_ChatGPTAPI($apiUrl, $secret_key, $organization_id, $gpt_model);
             $all_conversation[] = [
                 'role'    => 'system',
@@ -1952,7 +1952,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                     $k8   = ['gpt-4', 'gpt-4-0613', 'gpt-4-0314', 'code-davinci-002'];
                     $k16  = ['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'];
                     $k32  = ['gpt-4-32k', 'gpt-4-32k-0613', 'gpt-4-32k-0314', 'code-davinci-002'];
-                    $k128 = ['gpt-4-1106-preview', 'gpt-4-vision-preview', 'chatgpt-4o-latest', 'gpt-4o-mini-2024-07-18', 'gpt-4o-mini', 'gpt-4o-2024-08-06', 'gpt-4o-2024-05-13', 'gpt-4o'];
+                    $k128 = ['gpt-4o-mini', 'gpt-4-vision-preview', 'chatgpt-4o-latest', 'gpt-4o-mini-2024-07-18', 'gpt-4o-2024-08-06', 'gpt-4o-2024-05-13', 'gpt-4o'];
                     if (in_array($gptModel, $k8)) {
                         $tokenLimit = 8000;
                     } elseif (in_array($gptModel, $k16)) {
