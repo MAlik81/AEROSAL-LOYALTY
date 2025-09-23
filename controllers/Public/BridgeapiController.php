@@ -638,10 +638,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 $chatid_duration = ($bridge_obj->getUserDuration()) ? $bridge_obj->getUserDuration() : 60;
                 $chatid_tokens   = ($bridge_obj->getUserLimit()) ? $bridge_obj->getUserLimit() : 200000;
 
-                $chatControlPayload = $this->handleChatControlCommands($params, $message, $value_id);
-                if (null !== $chatControlPayload) {
-                    return $this->_sendJson($chatControlPayload);
-                }
                 // check ovelall tokens limit here
                 $this->enforceGlobalTokenLimit($value_id, $bridge_obj, null);
 
@@ -742,6 +738,27 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                         'role'    => 'system',
                         'content' => "Translate the user-provided text into `$global_lang`. If the detected language of the text is already `$global_lang`, return the original text exactly as it is, without translating. Ensure that the translation preserves the original meaning, tone, and context as closely as possible. The output should consist only of the translated (or unchanged) text, with no additional content, explanations, or responses included. If the language cannot be detected, default to returning the original text without any modifications.",
                     ];
+
+                    $translationContext = [
+                        'chat_api'                      => $chatAPI,
+                        'chat_history_string'           => $chat_history_string,
+                        'two_chat_history_conversation' => $two_chat_history_conversation,
+                        'global_lang'                   => $global_lang,
+                        'translate_system_prompt'       => $translate_system_prompt,
+                    ];
+
+                    $chatControlParams            = $params;
+                    $chatControlParams['chat_id'] = $chat_id;
+
+                    $chatControlPayload = $this->handleChatControlCommands(
+                        $chatControlParams,
+                        $message,
+                        $value_id,
+                        $translationContext
+                    );
+                    if (null !== $chatControlPayload) {
+                        return $this->_sendJson($chatControlPayload);
+                    }
 
                     $chatLimitResult = $this->handleChatLimits([
                         'value_id'                        => $value_id,
@@ -1307,7 +1324,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
      *
      * @return array|null Returns a JSON-ready payload to send immediately, or null to continue.
      */
-    private function handleChatControlCommands(array $params, $message, $value_id)
+    private function handleChatControlCommands(array $params, $message, $value_id, array $translationContext = [])
     {
         if (! isset($params['chat_id']) || ! $params['chat_id']) {
             return null;
@@ -1320,7 +1337,10 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         if ($check_temp_blacklist->getId()) {
             return [
                 'status'  => 'failure',
-                'message' => p__("Migachat", 'You are in temporary blacklist, please try again later.'),
+                'message' => $this->translateControlCommandMessage(
+                    'You are in temporary blacklist, please try again later.',
+                    $translationContext
+                ),
             ];
         }
 
@@ -1342,21 +1362,30 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 if ((new Migachat_Model_BridgrapiChatLimits())->addData($chat_id_limit_data)->save()) {
                     return [
                         'success' => true,
-                        'message' => p__("Migachat", 'AI turned OFF for this chat id, untill it is turned back ON.'),
+                        'message' => $this->translateControlCommandMessage(
+                            'AI turned OFF for this chat id, untill it is turned back ON.',
+                            $translationContext
+                        ),
                         'chat_id' => $chat_id_for_limit,
                     ];
                 }
 
                 return [
                     'success' => true,
-                    'message' => p__("Migachat", 'Error while turning OFF the AI for this chat id.'),
+                    'message' => $this->translateControlCommandMessage(
+                        'Error while turning OFF the AI for this chat id.',
+                        $translationContext
+                    ),
                     'chat_id' => $chat_id_for_limit,
                 ];
             }
 
             return [
                 'success' => true,
-                'message' => p__("Migachat", 'AI turned OFF for this chat id, untill it is turned back ON.'),
+                'message' => $this->translateControlCommandMessage(
+                    'AI turned OFF for this chat id, untill it is turned back ON.',
+                    $translationContext
+                ),
                 'chat_id' => $chat_id_for_limit,
             ];
         }
@@ -1370,7 +1399,10 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 if ($del_resp) {
                     return [
                         'success'    => true,
-                        'message'    => p__("Migachat", 'AI turned ON for this chat id, untill it is turned back OFF.'),
+                        'message'    => $this->translateControlCommandMessage(
+                            'AI turned ON for this chat id, untill it is turned back OFF.',
+                            $translationContext
+                        ),
                         'chat_id'    => $chat_id_for_limit,
                         'created_at' => date('Y-m-d H:i:s'),
                         'updated_at' => date('Y-m-d H:i:s'),
@@ -1379,14 +1411,20 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
                 return [
                     'success' => true,
-                    'message' => p__("Migachat", 'Error while turning ON the AI for this chat id.'),
+                    'message' => $this->translateControlCommandMessage(
+                        'Error while turning ON the AI for this chat id.',
+                        $translationContext
+                    ),
                     'chat_id' => $chat_id_for_limit,
                 ];
             }
 
             return [
                 'success'    => true,
-                'message'    => p__("Migachat", 'AI turned ON for this chat id, untill it is turned back OFF.'),
+                'message'    => $this->translateControlCommandMessage(
+                    'AI turned ON for this chat id, untill it is turned back OFF.',
+                    $translationContext
+                ),
                 'chat_id'    => $chat_id_for_limit,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
@@ -1394,6 +1432,60 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         }
 
         return null;
+    }
+
+    private function translateControlCommandMessage($message, array $translationContext)
+    {
+        $defaultMessage = p__("Migachat", $message);
+        $fallback       = $this->buildControlCommandFallback($message, $defaultMessage);
+
+        if (empty($translationContext['chat_api']) || empty($translationContext['translate_system_prompt'])) {
+            return $fallback;
+        }
+
+        $chatApi = $translationContext['chat_api'];
+
+        try {
+            if (! empty($translationContext['chat_history_string']) && ! empty($translationContext['two_chat_history_conversation'])) {
+                $chatApi->generateResponse(
+                    $translationContext['chat_history_string'],
+                    $translationContext['two_chat_history_conversation'],
+                    'admin',
+                    null
+                );
+            }
+
+            $globalLang   = $translationContext['global_lang'] ?? 'IT';
+            $prompt       = "Just give the translation no other text and if the language of text is same than don't translate.Translate the text in $globalLang: " . $defaultMessage;
+            $translation  = $chatApi->generateResponse($prompt, $translationContext['translate_system_prompt'], 'admin', null);
+
+            if (is_array($translation) && isset($translation[0]) && $translation[0] === true && isset($translation[1])) {
+                return $translation[1];
+            }
+        } catch (Exception $e) {
+            // Ignore translation errors and fallback to the bilingual message.
+        }
+
+        return $fallback;
+    }
+
+    private function buildControlCommandFallback($message, $defaultMessage)
+    {
+        $fallbackTranslations = [
+            'You are in temporary blacklist, please try again later.' => "Sei nella blacklist temporanea, riprova più tardi.",
+            'AI turned OFF for this chat id, untill it is turned back ON.' => "AI disattivata per questo chat ID finché non viene riattivata.",
+            'Error while turning OFF the AI for this chat id.' => "Errore durante la disattivazione dell'AI per questo chat ID.",
+            'AI turned ON for this chat id, untill it is turned back OFF.' => "AI attivata per questo chat ID finché non viene disattivata nuovamente.",
+            'Error while turning ON the AI for this chat id.' => "Errore durante l'attivazione dell'AI per questo chat ID.",
+        ];
+
+        if (! isset($fallbackTranslations[$message])) {
+            return $defaultMessage;
+        }
+
+        $italianMessage = p__("Migachat", $fallbackTranslations[$message]);
+
+        return $defaultMessage . ' / ' . $italianMessage;
     }
 
     private function checkAILimmitDuration($value_id, $chat_id)
