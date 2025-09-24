@@ -28,6 +28,12 @@ $quries = [
         WHERE `ai_answer_token_limit` IS NULL
             OR `ai_answer_token_limit` = 0
             OR `ai_answer_token_limit` <= 1000;",
+    "ALTER TABLE `migachat_operator_settings`
+        ADD COLUMN `operator_cooldown_minutes` INT UNSIGNED NOT NULL DEFAULT 60
+        AFTER `default_language`;",
+    "ALTER TABLE `migachat_operator_settings`
+        ADD COLUMN `operator_response_timeout_minutes` INT UNSIGNED NOT NULL DEFAULT 10
+        AFTER `operator_cooldown_minutes`;",
 ];
 
 foreach ($quries as $key => $query) {

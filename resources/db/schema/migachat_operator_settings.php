@@ -68,6 +68,14 @@ $schemas['migachat_operator_settings'] = [
         'charset' => 'utf8',
         'collation' => 'utf8_unicode_ci',
     ],
+    'operator_cooldown_minutes' => [
+        'type'    => 'int(11) unsigned',
+        'default' => '60',
+    ],
+    'operator_response_timeout_minutes' => [
+        'type'    => 'int(11) unsigned',
+        'default' => '10',
+    ],
     'email_subject' => [
         'type' => 'longtext',
         'charset' => 'utf8',
