@@ -828,7 +828,14 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                 $customer_obj  = new Customer_Model_Customer();
                 $customer_data = $customer_obj->find(['customer_id' => $data['customer_id']]);
 
-                $operator_settings = (new Migachat_Model_OperatorSettings)->find(['value_id' => $value_id]);
+                $operator_settings         = (new Migachat_Model_OperatorSettings)->find(['value_id' => $value_id]);
+                $cooldownMinutesRaw        = $operator_settings->getOperatorCooldownMinutes();
+                $cooldownMinutes           = is_numeric($cooldownMinutesRaw) ? max(0, (int) $cooldownMinutesRaw) : 60;
+                $cooldownSeconds           = $cooldownMinutes * 60;
+                $responseTimeoutRaw        = $operator_settings->getOperatorResponseTimeoutMinutes();
+                $responseTimeoutMinutes    = is_numeric($responseTimeoutRaw) ? max(1, (int) $responseTimeoutRaw) : 10;
+                $responseTimeoutSeconds    = $responseTimeoutMinutes * 60;
+                $current_time              = time();
                 if ($operator_settings->getIsEnabledInApp()) {
                     $last_five_chat_history     = (new Migachat_Model_Chatlogs())->getLastTenMessages($value_id, $data['customer_id'], 10);
                     $last_five_conversation     = [];
@@ -856,7 +863,18 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                     foreach ($fivw_conversation_temp as $key => $value) {
                         $rev_last_five_conversation .= 'TIMESTAMP = ' . $value['date_time'] . '<br>' . 'ROLE = ' . $value['role'] . '<br>' . 'TEXT = ' . $value['content'] . '<br>----------------<br>';
                     }
-                    if ($customer_consent->getAskedForOperator() != 1) {
+                    $lastAskedAtRaw  = $customer_consent->getAskedForOperatorAt();
+                    $lastAskedDiff   = PHP_INT_MAX;
+                    if (! empty($lastAskedAtRaw)) {
+                        $lastAskedDiff = $current_time - strtotime($lastAskedAtRaw);
+                    }
+
+                    $canAttemptEscalation = (
+                        $customer_consent->getAskedForOperator() != 1
+                        && ($cooldownSeconds === 0 || $lastAskedDiff > $cooldownSeconds)
+                    );
+
+                    if ($canAttemptEscalation) {
                         $operator       = false;
                         $operatorprompt = "Analyze this text string that a user wrote on our support chat (user prompt), reply with 1 if it is sufficiently probable tha it means that the user wants to speak to an operator. If it is not clear enough and in all other cases reply with a 0";
 
@@ -877,11 +895,10 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                         }
                     } elseif ($customer_consent->getAskedForOperator() == 1) {
                         $asked_for_operator_at = $customer_consent->getAskedForOperatorAt();
-                        // check if asked for operater at is more than 10 minutes old
+                        // check if asked for operater at is more than configured minutes old
                         $asked_for_operator_at = strtotime($asked_for_operator_at);
-                        $current_time          = strtotime(date('Y-m-d H:i:s'));
                         $diff                  = $current_time - $asked_for_operator_at;
-                        if ($diff < 600) {
+                        if ($diff < $responseTimeoutSeconds) {
                             // asked user to confirm if he wants a call from opertaor now check user prompt if he wants or don't want a call from opertaor.
                             $operatorprompt = "Analyze this text string that a user wrote on our support chat (user prompt),We asked user to confirm if he wants a call from opertaor now check user prompt if he wants with given prompt \"" . $operator_settings->getAskCallFromOperatorMsg() . "\" reply with 1 if it is sufficiently probable tha it means that the user wants to speak to an operator. If it is not clear enough and in all other cases reply with a 0";
                             $operator       = false;
@@ -933,6 +950,13 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                             }
                         } else {
                             $customer_consent->setAskedForOperator(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
+
+                            $response            = [];
+                            $response['success'] = true;
+                            $response['type']    = 'chatgpt';
+                            $response['data']    = $operator_settings->getDeclinedCallFromOperatorMsg();
+
+                            return $this->_sendJson($response);
                         }
 
                     }

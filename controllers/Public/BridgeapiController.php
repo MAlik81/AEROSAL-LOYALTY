@@ -2365,8 +2365,14 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         $globalLang     = strtolower((string) ($context['global_lang'] ?? ''));
         $translator     = $context['translator'] ?? null;
 
-        $opDefaultLang  = strtolower($operatorSettings->getDefaultLanguage() ?: 'it');
-        $opDetectedLang = $globalLang ?: $opDefaultLang;
+        $opDefaultLang          = strtolower($operatorSettings->getDefaultLanguage() ?: 'it');
+        $opDetectedLang         = $globalLang ?: $opDefaultLang;
+        $cooldownMinutesRaw     = $operatorSettings->getOperatorCooldownMinutes();
+        $cooldownMinutes        = is_numeric($cooldownMinutesRaw) ? max(0, (int) $cooldownMinutesRaw) : 60;
+        $cooldownSeconds        = $cooldownMinutes * 60;
+        $responseTimeoutRaw     = $operatorSettings->getOperatorResponseTimeoutMinutes();
+        $responseTimeoutMinutes = is_numeric($responseTimeoutRaw) ? max(1, (int) $responseTimeoutRaw) : 10;
+        $responseTimeoutSeconds = $responseTimeoutMinutes * 60;
 
         $translate = function ($text) use ($translator, $opDetectedLang, $opDefaultLang) {
             $text = (string) $text;
@@ -2403,7 +2409,12 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 'TEXT = ' . $entry['content'] . '<br>----------------<br>';
         }
 
-        if ($chatIdConsent->getAskedForOperator() != 1 && $lastAskedDiff > 3600) {
+        $canAttemptEscalation = (
+            $chatIdConsent->getAskedForOperator() != 1
+            && ($cooldownSeconds === 0 || $lastAskedDiff > $cooldownSeconds)
+        );
+
+        if ($canAttemptEscalation) {
             $operatorPrompt = $operatorSettings->getOperatorSystemPrompt()
                 ?: "Analyze this text string that a user wrote on our support chat (user prompt), reply with 1 if it is sufficiently probable tha it means that the user wants to speak to an operator. If it is not clear enough and in all other cases reply with a 0";
 
@@ -2444,7 +2455,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 $diff = $now - strtotime($askedStRaw);
             }
 
-            if ($diff < 600) {
+            if ($diff < $responseTimeoutSeconds) {
                 $lowerMessage  = strtolower($message);
                 $isPositiveHit = false;
 
@@ -2516,6 +2527,12 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             }
 
             $chatIdConsent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
+
+            return [
+                'success' => true,
+                'chat_id' => $chatId,
+                'message' => $translate($operatorSettings->getDeclinedCallFromOperatorMsg()),
+            ];
         }
 
         return null;
