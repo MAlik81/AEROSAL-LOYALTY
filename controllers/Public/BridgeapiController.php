@@ -1912,6 +1912,24 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 throw new Exception("Assistant not found with ID: " . $assistantId);
             }
 
+            $assistantInstructions = trim((string) $assistant->getInstructions());
+            $languagePolicyInstruction = <<<INSTRUCTIONS
+Language policy: Read the last 8–10 messages and detect the user’s language, prioritizing the most recent user message. Reply fully in that language. If multiple languages appear, use the language of the latest user message for your main reply and keep quoted text in its original language. Do not translate code blocks, URLs, error messages, product/brand names, file paths, or quoted snippets.
+Ambiguity rule (narrow): Only fall back to Italian (IT) if all of the following are true:
+
+1. The latest user message has fewer than 3 words *or* is only emojis/reactions (“ok”, “yes”, “????”, etc.); and
+2. In the previous 8–10 messages there is no user message with ≥3 words in a single, consistent language; and
+3. Automatic language detection has low confidence or shows conflicting languages across messages.
+Otherwise, do not default to Italian—reply in the detected language of the latest user message.
+Short but clear exceptions: Treat common short greetings/phrases (e.g., “hello”, “hi”, “hey”, “thanks”, “ciao”, “hola”) as not ambiguous—mirror their language. If the user later switches language, switch accordingly without comment.
+INSTRUCTIONS;
+
+            if ($assistantInstructions !== '') {
+                $assistantInstructions .= "\n\n" . $languagePolicyInstruction;
+            } else {
+                $assistantInstructions = $languagePolicyInstruction;
+            }
+
             $fileIds = $assistant->getOpenaiFileIds();
             $options = is_string($fileIds) ? json_decode($fileIds, true) : ($fileIds ? $fileIds : false);
             $opts    = [
@@ -1920,6 +1938,8 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                     'last_messages' => 10,
                 ],
             ];
+
+            $opts['instructions'] = $assistantInstructions;
 
             if ($options) {
                 $opts['tool_resources'] = [
