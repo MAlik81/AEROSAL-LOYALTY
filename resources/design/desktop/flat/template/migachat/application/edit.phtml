@@ -197,7 +197,6 @@ EOT;
         $confirm_call_from_operator_val  = $operator_settings->getConfirmCallFromOperatorMsg() ? $operator_settings->getConfirmCallFromOperatorMsg() : $default_confirm_call_message;
         $invalid_call_from_operator_val  = $operator_settings->getInvalidAskCallFromOperatorMsg() ? $operator_settings->getInvalidAskCallFromOperatorMsg() : $default_invalid_call_message;
         $declined_call_from_operator_val = $operator_settings->getDeclinedCallFromOperatorMsg() ? $operator_settings->getDeclinedCallFromOperatorMsg() : $default_declined_call_message;
-        $operator_cooldown_minutes_value = is_numeric($operator_settings->getOperatorCooldownMinutes()) ? (int) $operator_settings->getOperatorCooldownMinutes() : 60;
         $operator_response_timeout_value = is_numeric($operator_settings->getOperatorResponseTimeoutMinutes()) ? (int) $operator_settings->getOperatorResponseTimeoutMinutes() : 10;
 
         $assistants = (new Migachat_Model_Assistants())->findAll(['value_id' => $value_id])->toArray();
@@ -2114,18 +2113,6 @@ EOT;
                                             <?php }
                                             }?>
                                         </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <div class="col-md-4">
-                                        <label for="operator_cooldown_minutes">
-                                            <?php echo p__("Migachat", 'Operator request cooldown (minutes)');?>:
-                                        </label>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <input type="number" min="0" step="1" name="operator_cooldown_minutes"
-                                            id="operator_cooldown_minutes" class="required input-flat"
-                                            value="<?php echo $operator_cooldown_minutes_value; ?>">
                                     </div>
                                 </div>
                                 <div class="form-group">

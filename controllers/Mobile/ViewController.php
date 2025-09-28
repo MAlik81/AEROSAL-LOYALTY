@@ -829,9 +829,6 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                 $customer_data = $customer_obj->find(['customer_id' => $data['customer_id']]);
 
                 $operator_settings         = (new Migachat_Model_OperatorSettings)->find(['value_id' => $value_id]);
-                $cooldownMinutesRaw        = $operator_settings->getOperatorCooldownMinutes();
-                $cooldownMinutes           = is_numeric($cooldownMinutesRaw) ? max(0, (int) $cooldownMinutesRaw) : 60;
-                $cooldownSeconds           = $cooldownMinutes * 60;
                 $responseTimeoutRaw        = $operator_settings->getOperatorResponseTimeoutMinutes();
                 $responseTimeoutMinutes    = is_numeric($responseTimeoutRaw) ? max(1, (int) $responseTimeoutRaw) : 10;
                 $responseTimeoutSeconds    = $responseTimeoutMinutes * 60;
@@ -863,16 +860,7 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                     foreach ($fivw_conversation_temp as $key => $value) {
                         $rev_last_five_conversation .= 'TIMESTAMP = ' . $value['date_time'] . '<br>' . 'ROLE = ' . $value['role'] . '<br>' . 'TEXT = ' . $value['content'] . '<br>----------------<br>';
                     }
-                    $lastAskedAtRaw  = $customer_consent->getAskedForOperatorAt();
-                    $lastAskedDiff   = PHP_INT_MAX;
-                    if (! empty($lastAskedAtRaw)) {
-                        $lastAskedDiff = $current_time - strtotime($lastAskedAtRaw);
-                    }
-
-                    $canAttemptEscalation = (
-                        $customer_consent->getAskedForOperator() != 1
-                        && ($cooldownSeconds === 0 || $lastAskedDiff > $cooldownSeconds)
-                    );
+                    $canAttemptEscalation = ($customer_consent->getAskedForOperator() != 1);
 
                     if ($canAttemptEscalation) {
                         $operator       = false;

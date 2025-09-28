@@ -34,6 +34,17 @@ $quries = [
     "ALTER TABLE `migachat_operator_settings`
         ADD COLUMN `operator_response_timeout_minutes` INT UNSIGNED NOT NULL DEFAULT 10
         AFTER `operator_cooldown_minutes`;",
+    "CREATE TABLE IF NOT EXISTS `migachat_assistant_files` (
+        `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+        `assistant_id` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,
+        `vector_store_id` VARCHAR(64) COLLATE utf8_unicode_ci DEFAULT NULL,
+        `openai_file_id` VARCHAR(128) COLLATE utf8_unicode_ci NOT NULL,
+        `original_name` VARCHAR(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+        `created_at` DATETIME NOT NULL,
+        `updated_at` DATETIME NOT NULL,
+        PRIMARY KEY (`id`),
+        KEY `IDX_MIGACHAT_ASSISTANT_FILE` (`assistant_id`, `openai_file_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;",
 ];
 
 foreach ($quries as $key => $query) {
