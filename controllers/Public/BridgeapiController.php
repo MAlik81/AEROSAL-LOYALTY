@@ -2367,9 +2367,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
         $opDefaultLang          = strtolower($operatorSettings->getDefaultLanguage() ?: 'it');
         $opDetectedLang         = $globalLang ?: $opDefaultLang;
-        $cooldownMinutesRaw     = $operatorSettings->getOperatorCooldownMinutes();
-        $cooldownMinutes        = is_numeric($cooldownMinutesRaw) ? max(0, (int) $cooldownMinutesRaw) : 60;
-        $cooldownSeconds        = $cooldownMinutes * 60;
         $responseTimeoutRaw     = $operatorSettings->getOperatorResponseTimeoutMinutes();
         $responseTimeoutMinutes = is_numeric($responseTimeoutRaw) ? max(1, (int) $responseTimeoutRaw) : 10;
         $responseTimeoutSeconds = $responseTimeoutMinutes * 60;
@@ -2383,13 +2380,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
             return $text;
         };
-
-        $now           = time();
-        $lastAskedRaw  = $chatIdConsent->getLastAskedForOperatorAt();
-        $lastAskedDiff = PHP_INT_MAX;
-        if (! empty($lastAskedRaw)) {
-            $lastAskedDiff = $now - strtotime($lastAskedRaw);
-        }
 
         $historyRecords = (new Migachat_Model_BridgeAPI())->getHistoryMessages($valueId, $chatId, 10);
         $conversation   = [];
@@ -2409,10 +2399,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 'TEXT = ' . $entry['content'] . '<br>----------------<br>';
         }
 
-        $canAttemptEscalation = (
-            $chatIdConsent->getAskedForOperator() != 1
-            && ($cooldownSeconds === 0 || $lastAskedDiff > $cooldownSeconds)
-        );
+        $canAttemptEscalation = ($chatIdConsent->getAskedForOperator() != 1);
 
         if ($canAttemptEscalation) {
             $operatorPrompt = $operatorSettings->getOperatorSystemPrompt()

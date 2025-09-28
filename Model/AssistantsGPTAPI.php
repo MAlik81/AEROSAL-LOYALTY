@@ -159,6 +159,11 @@ class Migachat_Model_AssistantsGPTAPI
         return $this->request("GET", "/vector_stores/{$vectorStoreId}/files");
     }
 
+    public function retrieveFile($fileId)
+    {
+        return $this->request("GET", "/files/{$fileId}");
+    }
+
 
 
 

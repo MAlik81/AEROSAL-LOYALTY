@@ -715,9 +715,18 @@ class Migachat_BridgeapiController extends Application_Controller_Default
                 $assistant_data = $assistant_info->getData();
                 // dd($assistant_data, $assistant_info->getOpenaiFileIds(),json_decode($assistant_info->getOpenaiFileIds(), true));
                 // get vector store IDs
-                $vector_store_ids = null;
+                $vector_store_ids = [];
                 if (! empty($assistant_data['openai_file_ids'])) {
-                    $vector_store_ids = json_decode($assistant_data['openai_file_ids'])[0];
+                    $decodedIds = json_decode($assistant_data['openai_file_ids'], true);
+                    if (is_array($decodedIds)) {
+                        foreach ($decodedIds as $id) {
+                            if (! empty($id) && is_string($id)) {
+                                $vector_store_ids[] = $id;
+                            }
+                        }
+                    } elseif (is_string($assistant_data['openai_file_ids'])) {
+                        $vector_store_ids[] = $assistant_data['openai_file_ids'];
+                    }
                 }
                 $chatbot_setting_obj = new Migachat_Model_ChatbotSettings();
                 $chatbot_setting_obj->find(['value_id' => $value_id]);
@@ -725,24 +734,74 @@ class Migachat_BridgeapiController extends Application_Controller_Default
                 $organization_id = $chatbot_setting_obj->getOrganizationId();
 
                 $openai = new Migachat_Model_AssistantsGPTAPI($secret_key, $organization_id);
-                // get file IDs
-                $file_ids = [];
-                if (! empty($vector_store_ids)) {
-                    $files = $openai->listFilesInVectorStore($vector_store_ids);
-                    if (isset($files['data']) && is_array($files['data'])) {
-                        foreach ($files['data'] as $file) {
-                            $file_ids[] = $file['id'];
-                        }
-                    } else {
-                        throw new \Exception(p__("Migachat", "Failed to retrieve files from OpenAI."));
+                // Prepare file metadata
+                $file_ids   = [];
+                $file_items = [];
+                $assistant_files_model = new Migachat_Model_AssistantFiles();
+                $stored_files = $assistant_files_model->findAll(['assistant_id' => $assistant_id]);
+                $stored_file_map = [];
+                if ($stored_files) {
+                    foreach ($stored_files as $stored_file) {
+                        $stored_file_map[$stored_file->getOpenaiFileId()] = $stored_file->getOriginalName();
                     }
                 }
 
+                foreach ($vector_store_ids as $vector_store_id) {
+                    if (empty($vector_store_id)) {
+                        continue;
+                    }
+
+                    $files = $openai->listFilesInVectorStore($vector_store_id);
+                    if (! isset($files['data']) || ! is_array($files['data'])) {
+                        throw new \Exception(p__("Migachat", "Failed to retrieve files from OpenAI."));
+                    }
+
+                    foreach ($files['data'] as $file) {
+                        $openai_file_id = $file['file_id'] ?? ($file['id'] ?? null);
+                        if (empty($openai_file_id)) {
+                            continue;
+                        }
+
+                        $file_ids[] = $openai_file_id;
+
+                        $original_name = $stored_file_map[$openai_file_id] ?? null;
+
+                        if (! $original_name) {
+                            try {
+                                $file_details = $openai->retrieveFile($openai_file_id);
+                                if (isset($file_details['filename']) && $file_details['filename']) {
+                                    $original_name = $file_details['filename'];
+                                    $assistant_files_model->saveFileMetadata(
+                                        $assistant_id,
+                                        $vector_store_id,
+                                        $openai_file_id,
+                                        $original_name
+                                    );
+                                    $stored_file_map[$openai_file_id] = $original_name;
+                                }
+                            } catch (\Exception $e) {
+                                $original_name = null;
+                            }
+                        }
+
+                        $file_items[] = [
+                            'file_id'              => $openai_file_id,
+                            'vector_store_file_id' => $file['id'] ?? null,
+                            'vector_store_id'      => $vector_store_id,
+                            'original_name'        => $original_name ?: $openai_file_id,
+                        ];
+                    }
+                }
+
+                $vector_store_ids = array_values(array_unique($vector_store_ids));
+
                 $payload = [
-                    'success' => true,
-                    'data'    => $assistant_data,
-                    'file_ids'   => $file_ids,
-                    'vector_store_ids' => $vector_store_ids,
+                    'success'              => true,
+                    'data'                 => $assistant_data,
+                    'file_ids'             => array_values(array_unique($file_ids)),
+                    'files'                => $file_items,
+                    'vector_store_ids'     => $vector_store_ids[0] ?? null,
+                    'vector_store_id_list' => $vector_store_ids,
                 ];
             } catch (\Exception $e) {
                 $payload = [
@@ -815,9 +874,13 @@ class Migachat_BridgeapiController extends Application_Controller_Default
 
                 $openai = new Migachat_Model_AssistantsGPTAPI($secret_key, $organization_id);
 
-                $vector_store_ids[] = $received_request['vector_store_ids'] ?? [];
-                // $vector_store_ids          = null;
+                $vector_store_ids = [];
+                $existing_vector_store = $received_request['vector_store_ids'] ?? null;
+                if (! empty($existing_vector_store) && is_string($existing_vector_store)) {
+                    $vector_store_ids[] = $existing_vector_store;
+                }
                 $file_id = null;
+                $uploadedFilesMetadata = [];
 
                 // Step 3: Handle file upload to server & then to OpenAI
                 if (isset($_FILES["attached_file"]["name"]) && ! empty($_FILES["attached_file"]["name"])) {
@@ -867,6 +930,11 @@ class Migachat_BridgeapiController extends Application_Controller_Default
                             }
 
                             $vector_store_ids[] = $existing_vector_store_id;
+                            $uploadedFilesMetadata[] = [
+                                'vector_store_id' => $existing_vector_store_id,
+                                'file_id'         => $file_id,
+                                'original_name'   => $file_name,
+                            ];
                         } else {
                             // No existing vector store found, create new
                             $vectorStore = $openai->createVectorStore(['file_ids' => [$file_id]]);
@@ -875,6 +943,11 @@ class Migachat_BridgeapiController extends Application_Controller_Default
                             }
 
                             $vector_store_ids[] = $vectorStore['id'];
+                            $uploadedFilesMetadata[] = [
+                                'vector_store_id' => $vectorStore['id'],
+                                'file_id'         => $file_id,
+                                'original_name'   => $file_name,
+                            ];
                         }
                     } else {
                         // Creating new assistant, create new vector store
@@ -884,13 +957,18 @@ class Migachat_BridgeapiController extends Application_Controller_Default
                         }
 
                         $vector_store_ids[] = $vectorStore['id'];
+                        $uploadedFilesMetadata[] = [
+                            'vector_store_id' => $vectorStore['id'],
+                            'file_id'         => $file_id,
+                            'original_name'   => $file_name,
+                        ];
                     }
 
                 }
                 // remove duplicate vector store IDs
-                $vector_store_ids = array_unique($vector_store_ids);
+                $vector_store_ids = array_values(array_unique($vector_store_ids));
                 // Step 4: Assistant payload
-                if(empty($vector_store_ids[0])) {
+                if (empty($vector_store_ids)) {
                   $assistantPayload = [
                     'name'           => $name,
                     'description'    => $description,
@@ -921,6 +999,18 @@ class Migachat_BridgeapiController extends Application_Controller_Default
                 } else {
                     $response = $openai->patchAssistant($assistant_id, $assistantPayload);
 
+                }
+
+                if ($assistant_id && ! empty($uploadedFilesMetadata)) {
+                    $assistantFilesModel = new Migachat_Model_AssistantFiles();
+                    foreach ($uploadedFilesMetadata as $metadata) {
+                        $assistantFilesModel->saveFileMetadata(
+                            $assistant_id,
+                            $metadata['vector_store_id'] ?? null,
+                            $metadata['file_id'] ?? null,
+                            $metadata['original_name'] ?? null
+                        );
+                    }
                 }
                 // Migachat_Model_PromptSettings
                 $migachat_setting_obj = new Migachat_Model_PromptSettings();
@@ -964,6 +1054,7 @@ class Migachat_BridgeapiController extends Application_Controller_Default
         if ($received_request = $this->getRequest()->getPost()) {
             try {
                 $value_id = $received_request['value_id'];
+                $assistant_id = $received_request['assistant_id'] ?? null;
                 $file_id  = $received_request['file_id'];
                 $vector_store_id = $received_request['vector_store_id'] ?? null;
 
@@ -983,6 +1074,8 @@ class Migachat_BridgeapiController extends Application_Controller_Default
                 if (! isset($response['id'])) {
                     throw new Exception(p__("Migachat", "Failed to remove file from vector store."));
                 }
+
+                (new Migachat_Model_AssistantFiles())->deleteByFileId($file_id, $assistant_id);
 
                 $payload = [
                     'success' => true,

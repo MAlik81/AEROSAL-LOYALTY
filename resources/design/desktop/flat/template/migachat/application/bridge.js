@@ -706,34 +706,51 @@ $(document).ready(function() {
           $("#temperature-input").val(response2.temperature);
             // Parse openai_file_ids as JSON if it's a JSON string
             
-            var filesHtml = "<ol>";
-            if (response.vector_store_ids) {
-              filesHtml += "<li><b><?php echo p__('Migachat','Vector Store ID:'); ?></b><input type='hidden' name='vector_store_ids' value='"+response.vector_store_ids+"'> " + response.vector_store_ids + "</li>";
-            
-            filesHtml +="<li> <b><?php echo p__('Migachat','OpenAI File IDs'); ?>:</b></li>";
-            filesHtml +="<li> <ol id='existing_files'>";
-              console.log(response.file_ids);
-              
-            if (response.file_ids.length > 0) {
-              for (var i = 0; i < response.file_ids.length; i++) {
-                filesHtml +=
-                  "<li style='padding-bottom:5px;'>" +
-                  response.file_ids[i] +
-                  ' <button type="button" class="remove-file btn color-red" data-vs="'+response.vector_store_ids+'"  data-fid="'+response.file_ids[i]+'"><i class="fa fa-trash"></i></button></li>';
-              }
+          var filesHtml = "<ol>";
+          var vectorStoreIds = [];
+          if (Array.isArray(response.vector_store_id_list) && response.vector_store_id_list.length) {
+            vectorStoreIds = response.vector_store_id_list;
+          } else if (response.vector_store_ids) {
+            vectorStoreIds = [response.vector_store_ids];
+          }
+
+          if (vectorStoreIds.length > 0) {
+            var primaryVectorStoreId = vectorStoreIds[0];
+            filesHtml += "<li><b><?php echo p__('Migachat','Vector Store ID:'); ?></b><input type='hidden' name='vector_store_ids' value='" + primaryVectorStoreId + "'> " + primaryVectorStoreId + "</li>";
+
+            filesHtml += "<li> <b><?php echo p__('Migachat','Attached files'); ?>:</b></li>";
+            filesHtml += "<li> <ol class='existing-files-list'>";
+
+            var files = Array.isArray(response.files) ? response.files : [];
+            if ((!files || files.length === 0) && Array.isArray(response.file_ids)) {
+              files = response.file_ids.map(function(fileId) {
+                return {
+                  file_id: fileId,
+                  original_name: fileId,
+                  vector_store_id: primaryVectorStoreId
+                };
+              });
+            }
+
+            if (files.length > 0) {
+              files.forEach(function(fileEntry) {
+                var displayName = fileEntry.original_name || fileEntry.file_id;
+                var vectorStoreForFile = fileEntry.vector_store_id || primaryVectorStoreId;
+                filesHtml += "<li style='padding-bottom:5px;'>" +
+                  displayName + " <span class='file-id'>(" + fileEntry.file_id + ")</span>" +
+                  ' <button type="button" class="remove-file btn color-red" data-vs="' + vectorStoreForFile + '"  data-fid="' + fileEntry.file_id + '"><i class="fa fa-trash"></i></button></li>';
+              });
             } else {
-                filesHtml += "<li><?php echo p__('Migachat','No files found.'); ?></li>";
+              filesHtml += "<li><?php echo p__('Migachat','No files found.'); ?></li>";
             }
 
             filesHtml += "</ol></li>";
-              
-            }else {
-              filesHtml += "<li><?php echo p__('Migachat','No Vector Store IDs found.'); ?></li>";
-            }
-            filesHtml += "</ol>";
+          } else {
+            filesHtml += "<li><?php echo p__('Migachat','No Vector Store IDs found.'); ?></li>";
+          }
+          filesHtml += "</ol>";
 
-            
-            $("#existing_files").html(filesHtml);
+          $("#existing_files").html(filesHtml);
           $("#mask").hide();
         })
         .fail(function(response) {
@@ -773,6 +790,7 @@ $(document).unbind('click.removeFile"').on('click.removeFile', '.remove-file', f
         type: "post",
         data: {
           value_id: value_id,
+          assistant_id: $('#assistant_id_dd').val(),
           file_id: fileId,
           vector_store_id: vectorStoreId
         },
