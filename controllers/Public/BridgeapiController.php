@@ -1288,32 +1288,95 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
     public function checkPositiveResponce($question, $text, $secret_key, $organization_id)
     {
-        $isPositive = false;
+        $isPositive     = false;
+        $normalizedText = trim(mb_strtolower((string) $text, 'UTF-8'));
+
         foreach ($this->positiveResponses as $positiveWord) {
-            if (strpos(strtolower($text), $positiveWord) !== false) {
+            $needle = trim(mb_strtolower($positiveWord, 'UTF-8'));
+            if ($needle === '') {
+                continue;
+            }
+
+            if (mb_stripos($normalizedText, $needle) !== false) {
                 $isPositive = true;
                 break;
             }
         }
-        // echo $isPositive ? 'Positive' : 'Not Positive';
+
         if (! $isPositive) {
-            $prompt             = "I asked to the user this: $question. The answer is this one : $text. Please analyze if the answer means Positive or Negitive, and give me the result with simple  positive (1) or negative (0).If unsure not sure about anything return 0. Provide only 1 or 0.do not add any explainations, just return 1 or 0.";
-            $apiUrl             = 'https://api.openai.com/v1/chat/completions';
-            $gpt_model          = 'gpt-4o-mini';
-            $chatAPI            = new Migachat_Model_ChatGPTAPI($apiUrl, $secret_key, $organization_id, $gpt_model);
-            $all_conversation[] = [
-                'role'    => 'system',
-                'content' => "You are a helpful assistant.",
-            ];
-            $response = $chatAPI->generateResponse($prompt, $all_conversation, 'admin', 100);
-            if ($response[0] === true) {
-                return $response[1];
-            } else {
-                return 0;
-            }
-        } else {
-            return 1;
+            $cleanQuestion = $this->sanitizePromptText($question);
+            $cleanAnswer   = $this->sanitizePromptText($text);
+            $prompt        = "I asked to the user this: $cleanQuestion. The answer is this one : $cleanAnswer. Please analyze if the answer means Positive or Negitive, and give me the result with simple  positive (1) or negative (0).If unsure not sure about anything return 0. Provide only 1 or 0.do not add any explainations, just return 1 or 0.";
+
+            return $this->requestChatGPTBinaryDecision($prompt, $secret_key, $organization_id);
         }
+
+        return 1;
+    }
+
+    private function sanitizePromptText($text)
+    {
+        $text = (string) $text;
+        $text = trim($text);
+
+        return preg_replace('/\s+/', ' ', $text);
+    }
+
+    private function requestChatGPTBinaryDecision($prompt, $secret_key, $organization_id)
+    {
+        if (! $secret_key) {
+            return 0;
+        }
+
+        $apiUrl    = 'https://api.openai.com/v1/chat/completions';
+        $gpt_model = 'gpt-4o-mini';
+        $chatAPI   = new Migachat_Model_ChatGPTAPI($apiUrl, $secret_key, $organization_id, $gpt_model);
+        $messages  = [
+            [
+                'role'    => 'system',
+                'content' => 'You are a helpful assistant.',
+            ],
+        ];
+
+        $response = $chatAPI->generateResponse($prompt, $messages, 'admin', 100);
+        if ($response[0] === true) {
+            $value = trim((string) $response[1]);
+
+            if ($value === '1' || $value === '0') {
+                return (int) $value;
+            }
+        }
+
+        return 0;
+    }
+
+    private function isOperatorIntent($message, $intentType, $secret_key, $organization_id)
+    {
+        $normalizedMessage = trim(mb_strtolower((string) $message, 'UTF-8'));
+        $phrases           = $intentType === 'positive' ? $this->positiveResponses : $this->negativeResponses;
+
+        foreach ($phrases as $phrase) {
+            $needle = trim(mb_strtolower($phrase, 'UTF-8'));
+            if ($needle === '') {
+                continue;
+            }
+
+            if (mb_stripos($normalizedMessage, $needle) !== false) {
+                return true;
+            }
+        }
+
+        $intentDescription = $intentType === 'positive'
+            ? 'a positive or affirmative intent to speak with a human operator'
+            : 'a negative or declining intent to speak with a human operator';
+
+        $cleanMessage = $this->sanitizePromptText($message);
+        $prompt       = 'A customer support chatbot asked the user if they would like to speak with a human operator. '
+            . 'The user replied: "' . $cleanMessage . '". '
+            . 'Does this reply express ' . $intentDescription . '? Respond with 1 for yes and 0 for no. '
+            . 'If the intent is unclear respond with 0. Provide only 1 or 0.';
+
+        return $this->requestChatGPTBinaryDecision($prompt, $secret_key, $organization_id) === 1;
     }
 
     /**
@@ -2463,17 +2526,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             }
 
             if ($diff < $responseTimeoutSeconds) {
-                $lowerMessage  = strtolower($message);
-                $isPositiveHit = false;
-
-                foreach ($this->positiveResponses as $positiveWord) {
-                    if (strpos($lowerMessage, $positiveWord) !== false) {
-                        $isPositiveHit = true;
-                        break;
-                    }
-                }
-
-                if ($isPositiveHit) {
+                if ($this->isOperatorIntent($message, 'positive', $secretKey, $organizationId)) {
                     $appId             = (new Migachat_Model_Setting())->getAppIdByValueId($valueId);
                     $operatorRequested = [
                         'app_id'       => $appId,
@@ -2504,7 +2557,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                     ];
                 }
 
-                if (in_array(strtolower($message), $this->negativeResponses)) {
+                if ($this->isOperatorIntent($message, 'negative', $secretKey, $organizationId)) {
                     $chatIdConsent->setAskedForOperator(0)->setAskedForOperatorCount(0)->setCreatedAt(date('Y-m-d H:i:s'))->save();
 
                     return [
