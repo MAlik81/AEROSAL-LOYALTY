@@ -80,6 +80,40 @@ class Migachat_Model_AssistantsGPTAPI
         return json_decode($response, true);
     }
 
+    private function buildQueryString(array $params)
+    {
+        return implode('&', $this->buildQueryParts($params));
+    }
+
+    private function buildQueryParts(array $params, $prefix = '')
+    {
+        $queryParts = [];
+
+        foreach ($params as $key => $value) {
+            $paramKey = $prefix === ''
+                ? $key
+                : (is_int($key) ? "{$prefix}[]" : "{$prefix}[{$key}]");
+
+            if (is_array($value)) {
+                $queryParts = array_merge(
+                    $queryParts,
+                    $this->buildQueryParts($value, $paramKey)
+                );
+                continue;
+            }
+
+            $encodedKey = rawurlencode($paramKey);
+
+            if ($value === null) {
+                $queryParts[] = $encodedKey;
+            } else {
+                $queryParts[] = $encodedKey . '=' . rawurlencode((string) $value);
+            }
+        }
+
+        return $queryParts;
+    }
+
     // Remaining methods unchanged...
     public function getAllAssistants()
     {return $this->request("GET", "/assistants");}
@@ -131,7 +165,7 @@ class Migachat_Model_AssistantsGPTAPI
         $endpoint = "/threads/{$threadId}/runs/{$runId}";
 
         if (! empty($params)) {
-            $query    = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+            $query = $this->buildQueryString($params);
             $endpoint .= "?{$query}";
         }
 
