@@ -2094,6 +2094,16 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         $openai            = $executionContext['openai'] ?? null;
 
         if ($useAssistant) {
+            $assistantContext = $this->applyAssistantLanguageInstructions(
+                $assistantContext,
+                $conversationContext,
+                $preparedMsg
+            );
+
+            $conversationContext['assistant_context'] = $assistantContext;
+        }
+
+        if ($useAssistant) {
             $response       = $this->runAssistantConversation($assistantContext, $preparedMsg, $openai);
             $isAssistantRun = true;
         } else {
@@ -2210,6 +2220,84 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         (new Migachat_Model_Webservicelogs())->addData($errorArray)->save();
 
         return $payload;
+    }
+
+    private function applyAssistantLanguageInstructions(array $assistantContext, array $conversationContext, $preparedMsg)
+    {
+        $opts = $assistantContext['assistant_run_opts'] ?? [];
+
+        $globalLangRaw  = $conversationContext['global_lang'] ?? '';
+        $globalLangName = isset($conversationContext['global_lang_name'])
+            ? (string) $conversationContext['global_lang_name']
+            : '';
+
+        $globalLang = strtoupper(trim((string) $globalLangRaw));
+
+        if ($globalLang === '') {
+            $this->logAssistantWarning(
+                'generateAndLogAiResponse',
+                'Language metadata missing for assistant additional instructions',
+                [
+                    'has_global_lang'      => isset($conversationContext['global_lang']),
+                    'has_global_lang_name' => isset($conversationContext['global_lang_name']),
+                ]
+            );
+
+            return $assistantContext;
+        }
+
+        $languageLabel = trim($globalLangName) !== '' ? $globalLangName : $globalLang;
+
+        $instruction = sprintf(
+            'Always respond in %s. If you are unsure which language to use, default to %s.',
+            $languageLabel,
+            $globalLang
+        );
+
+        if ($this->shouldMirrorUserMessage($preparedMsg)) {
+            $instruction .= ' Mirror the user\'s tone and language from their last message: "'
+                . $this->prepareMirrorSnippet($preparedMsg)
+                . '".';
+        }
+
+        $opts['additional_instructions']      = $instruction;
+        $assistantContext['assistant_run_opts'] = $opts;
+
+        return $assistantContext;
+    }
+
+    private function shouldMirrorUserMessage($message)
+    {
+        $normalized = trim(strip_tags((string) $message));
+
+        if ($normalized === '') {
+            return false;
+        }
+
+        $alphanumeric = preg_replace('/[^\pL\pN]+/u', '', $normalized);
+
+        if ($alphanumeric === null) {
+            $alphanumeric = '';
+        }
+
+        return mb_strlen($alphanumeric) >= 3;
+    }
+
+    private function prepareMirrorSnippet($message)
+    {
+        $sanitized = trim(strip_tags((string) $message));
+        $sanitized = preg_replace('/\s+/u', ' ', $sanitized);
+        if ($sanitized === null) {
+            $sanitized = '';
+        }
+
+        $snippet = mb_substr($sanitized, 0, 280);
+
+        if (mb_strlen($sanitized) > 280) {
+            $snippet .= '…';
+        }
+
+        return str_replace(['"', '“', '”'], ['\"', '\"', '\"'], $snippet);
     }
 
     private function runAssistantConversation(array $assistantContext, $preparedMsg, $openai)
