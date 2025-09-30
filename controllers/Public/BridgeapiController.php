@@ -2340,7 +2340,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             usleep(600000);
 
             try {
-                $status = $openai->getRunStatus($threadId, $runId);
+                $status = $openai->getRunStatus($threadId, $runId, ['include' => ['usage']]);
             } catch (Exception $exception) {
                 $this->logAssistantException($exception, 'getRunStatus');
                 return $this->assistantFailurePayload($this->mapAssistantApiErrorCodeToMessage(null));
