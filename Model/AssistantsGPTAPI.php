@@ -126,9 +126,16 @@ class Migachat_Model_AssistantsGPTAPI
         return $this->request("POST", "/threads/{$threadId}/runs", $payload);
     }
 
-    public function getRunStatus($threadId, $runId)
+    public function getRunStatus($threadId, $runId, $params = [])
     {
-        return $this->request("GET", "/threads/{$threadId}/runs/{$runId}");
+        $endpoint = "/threads/{$threadId}/runs/{$runId}";
+
+        if (! empty($params)) {
+            $query    = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+            $endpoint .= "?{$query}";
+        }
+
+        return $this->request("GET", $endpoint);
     }
 
     public function getThreadMessages($threadId, $params = [])

@@ -1278,7 +1278,7 @@ class Migachat_Mobile_ViewController extends Application_Controller_Mobile_Defau
                                 sleep(2);
 
                                 try {
-                                    $status = $openai->getRunStatus($thread_id, $run_id);
+                                    $status = $openai->getRunStatus($thread_id, $run_id, ['include' => ['usage']]);
                                 } catch (Exception $exception) {
                                     $this->logMobileAssistantException($exception, 'getRunStatus');
                                     $payload = $this->finalizeMobileAssistantFailure(
