@@ -977,6 +977,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                             'api_url'                       => $apiUrl,
                             'secret_key'                    => $secret_key,
                             'organization_id'               => $organization_id,
+                            'global_lang'                => $global_lang,
                         ]);
 
                         $payload = $this->generateAndLogAiResponse(
@@ -1891,6 +1892,7 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         $chatHistoryString           = $context['chat_history_string'] ?? '';
         $twoChatHistoryConversation  = $context['two_chat_history_conversation'] ?? [];
         $translateSystemPrompt       = $context['translate_system_prompt'] ?? [];
+        $global_lang               = $context['global_lang'] ?? 'IT';
 
         if (! $chatApi instanceof Migachat_Model_ChatGPTAPI) {
             $chatApi = new Migachat_Model_ChatGPTAPI($apiUrl, $secretKey, $organizationId, $gptModel);
@@ -1930,6 +1932,11 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
             }
 
             $assistantContext['assistant_id']       = $assistantId;
+            $assistantContext['additional_instructions']       = "Language rule (highest priority): 
+1. Mirror the language of the user’s last full message. 
+2. If the last message is too short, unclear, or ambiguous (e.g. “ok”, “yes”, emojis), then reply in $global_lang. 
+3. Do not switch languages unless the user explicitly does so.";
+            
             $assistantContext['assistant_options']  = $options;
             $assistantContext['assistant_run_opts'] = $opts;
 
@@ -2094,16 +2101,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         $openai            = $executionContext['openai'] ?? null;
 
         if ($useAssistant) {
-            $assistantContext = $this->applyAssistantLanguageInstructions(
-                $assistantContext,
-                $conversationContext,
-                $preparedMsg
-            );
-
-            $conversationContext['assistant_context'] = $assistantContext;
-        }
-
-        if ($useAssistant) {
             $response       = $this->runAssistantConversation($assistantContext, $preparedMsg, $openai);
             $isAssistantRun = true;
         } else {
@@ -2220,84 +2217,6 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
         (new Migachat_Model_Webservicelogs())->addData($errorArray)->save();
 
         return $payload;
-    }
-
-    private function applyAssistantLanguageInstructions(array $assistantContext, array $conversationContext, $preparedMsg)
-    {
-        $opts = $assistantContext['assistant_run_opts'] ?? [];
-
-        $globalLangRaw  = $conversationContext['global_lang'] ?? '';
-        $globalLangName = isset($conversationContext['global_lang_name'])
-            ? (string) $conversationContext['global_lang_name']
-            : '';
-
-        $globalLang = strtoupper(trim((string) $globalLangRaw));
-
-        if ($globalLang === '') {
-            $this->logAssistantWarning(
-                'generateAndLogAiResponse',
-                'Language metadata missing for assistant additional instructions',
-                [
-                    'has_global_lang'      => isset($conversationContext['global_lang']),
-                    'has_global_lang_name' => isset($conversationContext['global_lang_name']),
-                ]
-            );
-
-            return $assistantContext;
-        }
-
-        $languageLabel = trim($globalLangName) !== '' ? $globalLangName : $globalLang;
-
-        $instruction = sprintf(
-            'Always respond in %s. If you are unsure which language to use, default to %s.',
-            $languageLabel,
-            $globalLang
-        );
-
-        if ($this->shouldMirrorUserMessage($preparedMsg)) {
-            $instruction .= ' Mirror the user\'s tone and language from their last message: "'
-                . $this->prepareMirrorSnippet($preparedMsg)
-                . '".';
-        }
-
-        $opts['additional_instructions']      = $instruction;
-        $assistantContext['assistant_run_opts'] = $opts;
-
-        return $assistantContext;
-    }
-
-    private function shouldMirrorUserMessage($message)
-    {
-        $normalized = trim(strip_tags((string) $message));
-
-        if ($normalized === '') {
-            return false;
-        }
-
-        $alphanumeric = preg_replace('/[^\pL\pN]+/u', '', $normalized);
-
-        if ($alphanumeric === null) {
-            $alphanumeric = '';
-        }
-
-        return mb_strlen($alphanumeric) >= 3;
-    }
-
-    private function prepareMirrorSnippet($message)
-    {
-        $sanitized = trim(strip_tags((string) $message));
-        $sanitized = preg_replace('/\s+/u', ' ', $sanitized);
-        if ($sanitized === null) {
-            $sanitized = '';
-        }
-
-        $snippet = mb_substr($sanitized, 0, 280);
-
-        if (mb_strlen($sanitized) > 280) {
-            $snippet .= '…';
-        }
-
-        return str_replace(['"', '“', '”'], ['\"', '\"', '\"'], $snippet);
     }
 
     private function runAssistantConversation(array $assistantContext, $preparedMsg, $openai)
@@ -2455,6 +2374,9 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
         $opDefaultLang          = strtolower($operatorSettings->getDefaultLanguage() ?: 'it');
         $opDetectedLang         = $globalLang ?: $opDefaultLang;
+        $cooldownMinutesRaw     = $operatorSettings->getOperatorCooldownMinutes();
+        $cooldownMinutes        = is_numeric($cooldownMinutesRaw) ? max(0, (int) $cooldownMinutesRaw) : 60;
+        $cooldownSeconds        = $cooldownMinutes * 60;
         $responseTimeoutRaw     = $operatorSettings->getOperatorResponseTimeoutMinutes();
         $responseTimeoutMinutes = is_numeric($responseTimeoutRaw) ? max(1, (int) $responseTimeoutRaw) : 10;
         $responseTimeoutSeconds = $responseTimeoutMinutes * 60;
@@ -2468,6 +2390,13 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
 
             return $text;
         };
+
+        $now           = time();
+        $lastAskedRaw  = $chatIdConsent->getLastAskedForOperatorAt();
+        $lastAskedDiff = PHP_INT_MAX;
+        if (! empty($lastAskedRaw)) {
+            $lastAskedDiff = $now - strtotime($lastAskedRaw);
+        }
 
         $historyRecords = (new Migachat_Model_BridgeAPI())->getHistoryMessages($valueId, $chatId, 10);
         $conversation   = [];
@@ -2487,7 +2416,10 @@ class Migachat_Public_BridgeapiController extends Migachat_Controller_Default
                 'TEXT = ' . $entry['content'] . '<br>----------------<br>';
         }
 
-        $canAttemptEscalation = ($chatIdConsent->getAskedForOperator() != 1);
+        $canAttemptEscalation = (
+            $chatIdConsent->getAskedForOperator() != 1
+            && ($cooldownSeconds === 0 || $lastAskedDiff > $cooldownSeconds)
+        );
 
         if ($canAttemptEscalation) {
             $operatorPrompt = $operatorSettings->getOperatorSystemPrompt()
