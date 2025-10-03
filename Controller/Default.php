@@ -1,14 +1,16 @@
 <?php
-class Migachat_Controller_Default extends Core_Controller_Default {
-    public function init() {
+class aerosalloyalty_Controller_Default extends Core_Controller_Default
+{
+    public function init()
+    {
         parent::init();
     }
-
-    public function indexAction() {
+    public function indexAction()
+    {
         $this->_sendJson([
             'error' => 1,
-            'message' => p__("Migachat",'Invalid Access.')
+            'message' => __('Invalid Access.')
         ]);
-	}
-	
+    }
 }
+
