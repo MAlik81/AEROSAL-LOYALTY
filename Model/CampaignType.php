@@ -20,11 +20,36 @@ class Aerosalloyalty_Model_CampaignType extends Core_Model_Default
     public function upsert(array $data) {
         $value_id = (int)$data['value_id'];
         $code     = (string)$data['code'];
+        $code_original = array_key_exists('code_original', $data) ? (string)$data['code_original'] : '';
+        $id = array_key_exists('id', $data) ? (int)$data['id'] : 0;
 
-        $row = $this->_db_table->fetchRow([
-            'value_id = ?' => $value_id,
-            'code = ?'     => $code
-        ]);
+        unset($data['code_original'], $data['id']);
+
+        if ($code_original === '') {
+            $code_original = $code;
+        }
+
+        $row = null;
+        if ($id) {
+            $row = $this->_db_table->find($id)->current();
+            if (!$row || (int)$row->value_id !== $value_id) {
+                $row = null;
+            }
+        }
+
+        if (!$row && $code_original !== '') {
+            $row = $this->_db_table->fetchRow([
+                'value_id = ?' => $value_id,
+                'code = ?'     => $code_original
+            ]);
+        }
+
+        if (!$row) {
+            $row = $this->_db_table->fetchRow([
+                'value_id = ?' => $value_id,
+                'code = ?'     => $code
+            ]);
+        }
 
         $data['updated_at'] = date('Y-m-d H:i:s');
 

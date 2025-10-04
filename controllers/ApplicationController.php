@@ -214,6 +214,14 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
                 'name'     => trim($p['name'] ?? ''),
                 'icon'     => strlen(trim($p['icon'] ?? '')) ? trim($p['icon']) : null
             ];
+            $code_original = trim($p['code_original'] ?? '');
+            $id = (int)($p['id'] ?? 0);
+            if ($code_original !== '') {
+                $data['code_original'] = $code_original;
+            }
+            if ($id) {
+                $data['id'] = $id;
+            }
             if (!$data['code'] || !$data['name']) throw new Exception('Code and Name are required');
 
             (new Aerosalloyalty_Model_CampaignType())->upsert($data);
