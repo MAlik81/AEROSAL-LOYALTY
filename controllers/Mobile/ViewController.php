@@ -480,6 +480,15 @@ class Aerosalloyalty_Mobile_ViewController extends Application_Controller_Mobile
             $list = [];
             foreach ($rows as $c) {
                 $d = $c->getData();
+                if (!array_key_exists('prizes_to_redeem', $d) && array_key_exists('prizes', $d)) {
+                    $d['prizes_to_redeem'] = $d['prizes'];
+                }
+                if (!array_key_exists('prizes_to_redeem', $d)) {
+                    $d['prizes_to_redeem'] = null;
+                }
+                if (array_key_exists('prizes', $d)) {
+                    unset($d['prizes']);
+                }
                 $code = $d['campaign_type_code'] ?? '';
                 $d['campaign_type_name'] = isset($map[$code]) ? $map[$code]['name'] : $code;
                 $d['campaign_type_icon'] = isset($map[$code]) ? $map[$code]['icon'] : null;

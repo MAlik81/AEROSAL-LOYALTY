@@ -8,10 +8,45 @@ class Aerosalloyalty_Model_Campaign extends Core_Model_Default
         $this->_db_table = new Aerosalloyalty_Model_Db_Table_Campaign();
     }
 
+    protected function _normalizeCampaignData(array $data)
+    {
+        $hasPrizesToRedeem = array_key_exists('prizes_to_redeem', $data);
+        $hasPrizesLegacy   = array_key_exists('prizes', $data);
+
+        if ($hasPrizesToRedeem) {
+            $value = $data['prizes_to_redeem'];
+        } elseif ($hasPrizesLegacy) {
+            $value = $data['prizes'];
+        } else {
+            return $data;
+        }
+
+        if ($value !== null && !is_scalar($value)) {
+            $value = null;
+        }
+
+        if (is_scalar($value)) {
+            $value = trim((string)$value);
+            if ($value === '') {
+                $value = null;
+            }
+        }
+
+        $data['prizes_to_redeem'] = $value;
+
+        if ($hasPrizesLegacy) {
+            unset($data['prizes']);
+        }
+
+        return $data;
+    }
+
     public function upsert(array $data) {
         $value_id    = (int)$data['value_id'];
         $card_number = (string)$data['card_number'];
         $uid         = (string)$data['campaign_uid'];
+
+        $data = $this->_normalizeCampaignData($data);
 
         $row = $this->_db_table->fetchRow([
             'value_id = ?'    => $value_id,
@@ -23,11 +58,12 @@ class Aerosalloyalty_Model_Campaign extends Core_Model_Default
 
         if ($row) {
             $this->_db_table->update($data, ['aerosalloyalty_campaign_id = ?' => $row->aerosalloyalty_campaign_id]);
-            $this->setData(array_merge($row->toArray(), $data));
+            $this->setData($this->_normalizeCampaignData(array_merge($row->toArray(), $data)));
         } else {
             $data['created_at'] = date('Y-m-d H:i:s');
             $id = $this->_db_table->insert($data);
             $this->find($id);
+            $this->setData($this->_normalizeCampaignData($this->getData()));
         }
         return $this;
     }
@@ -55,7 +91,7 @@ class Aerosalloyalty_Model_Campaign extends Core_Model_Default
 
         $row = $this->_db_table->fetchRow($where);
         if ($row) {
-            $this->setData($row->toArray());
+            $this->setData($this->_normalizeCampaignData($row->toArray()));
         } else {
             $this->setData([]);
         }
@@ -76,5 +112,10 @@ class Aerosalloyalty_Model_Campaign extends Core_Model_Default
             'value_id = ?'   => (int)$value_id,
             'card_number = ?'=> (string)$card_number
         ], 'name ASC');
+    }
+
+    public function getPrizesToRedeem()
+    {
+        return $this->getData('prizes_to_redeem');
     }
 }

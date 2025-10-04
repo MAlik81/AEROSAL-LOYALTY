@@ -32,6 +32,18 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
                 $data = [];
             }
 
+            if (!array_key_exists('prizes_to_redeem', $data) && array_key_exists('prizes', $data)) {
+                $data['prizes_to_redeem'] = $data['prizes'];
+            }
+
+            if (!array_key_exists('prizes_to_redeem', $data)) {
+                $data['prizes_to_redeem'] = null;
+            }
+
+            if (array_key_exists('prizes', $data)) {
+                unset($data['prizes']);
+            }
+
             if (!array_key_exists('last_operation', $data)) {
                 $data['last_operation'] = null;
             }
