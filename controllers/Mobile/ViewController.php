@@ -87,29 +87,54 @@ class Aerosalloyalty_Mobile_ViewController extends Application_Controller_Mobile
         return strtoupper(substr(sha1(uniqid('', true)), 0, 12));
     }
 
-    protected function webhookNotify($value_id, $card_number, array $customer)
+    protected function webhookNotify($value_id, $card_number, $ean_encoding, array $user)
     {
+        $payload = [
+            'event'     => 'CardActivated',
+            'timestamp' => date('c'),
+            'card'      => [
+                'card_number'  => (string)$card_number,
+                'ean_encoding' => (string)$ean_encoding,
+            ],
+            'user'      => [
+                'name'    => $user['name'] ?? null,
+                'surname' => $user['surname'] ?? null,
+                'phone'   => $user['phone'] ?? null,
+                'email'   => $user['email'] ?? null,
+            ],
+        ];
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
         try {
             $settings = $this->getSettings($value_id);
-            $url = trim((string)$settings->getWebhookUrl());
-            if (!$url) return;
+            $originalUrl = trim((string)$settings->getWebhookUrl());
+            if (!$originalUrl) return;
 
-            $payload = [
-                'value_id'    => (int)$value_id,
-                'card_number' => (string)$card_number,
-                'customer'    => $customer,
-                'event'       => 'card_linked'
-            ];
+            $resolvedUrl = strtr($originalUrl, [
+                '{card_number}' => (string)$card_number,
+                '{user.name}'   => isset($user['name']) ? (string)$user['name'] : '',
+                '{user.email}'  => isset($user['email']) ? (string)$user['email'] : '',
+                '{user.phone}'  => isset($user['phone']) ? (string)$user['phone'] : '',
+            ]);
+            $resolvedUrl = trim($resolvedUrl);
+            if ($resolvedUrl === '') return;
 
-            $client = new Zend_Http_Client($url, ['timeout' => 6]);
+            $client = new Zend_Http_Client($resolvedUrl, ['timeout' => 6]);
             $client->setHeaders('Content-Type', 'application/json; charset=utf-8');
-            $client->setRawData(json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'application/json');
+            $client->setRawData($payloadJson, 'application/json');
             $resp = $client->request(Zend_Http_Client::POST);
             $status = $resp ? $resp->getStatus() : null;
 
-            (new Aerosalloyalty_Model_WebhookLog())->log($value_id, 'outbound', $url, $status, json_encode($payload));
+            (new Aerosalloyalty_Model_WebhookLog())->log($value_id, 'outbound', $resolvedUrl, $status, $payloadJson);
         } catch (Exception $e) {
-            (new Aerosalloyalty_Model_WebhookLog())->log($value_id, 'outbound', isset($url) ? $url : '', null, json_encode(['error' => $e->getMessage()]));
+            $endpoint = isset($resolvedUrl) && $resolvedUrl !== ''
+                ? $resolvedUrl
+                : (isset($originalUrl) ? $originalUrl : '');
+            $errorPayload = json_encode([
+                'error'   => $e->getMessage(),
+                'payload' => $payload,
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            (new Aerosalloyalty_Model_WebhookLog())->log($value_id, 'outbound', $endpoint, null, $errorPayload);
         }
     }
 
@@ -289,26 +314,38 @@ class Aerosalloyalty_Mobile_ViewController extends Application_Controller_Mobile
                     $cm = new Customer_Model_Customer();
                     $cm->find($customer_id);
                     if ($cm && $cm->getId()) {
+                        $normalize = function ($value) {
+                            $value = trim((string)$value);
+                            return $value !== '' ? $value : null;
+                        };
+
                         $first = null;
                         $last = null;
                         $email = null;
-                        if (method_exists($cm, 'getFirstname')) $first = (string)$cm->getFirstname();
-                        elseif (method_exists($cm, 'getFirstName')) $first = (string)$cm->getFirstName();
-                        if (method_exists($cm, 'getLastname')) $last = (string)$cm->getLastname();
-                        elseif (method_exists($cm, 'getLastName')) $last = (string)$cm->getLastName();
-                        if (method_exists($cm, 'getEmail')) $email = (string)$cm->getEmail();
+                        $phone = null;
+
+                        if (method_exists($cm, 'getFirstname')) $first = $normalize($cm->getFirstname());
+                        elseif (method_exists($cm, 'getFirstName')) $first = $normalize($cm->getFirstName());
+
+                        if (method_exists($cm, 'getLastname')) $last = $normalize($cm->getLastname());
+                        elseif (method_exists($cm, 'getLastName')) $last = $normalize($cm->getLastName());
+
+                        if (method_exists($cm, 'getEmail')) $email = $normalize($cm->getEmail());
+
+                        if (method_exists($cm, 'getTelephone')) $phone = $normalize($cm->getTelephone());
+                        elseif (method_exists($cm, 'getPhone')) $phone = $normalize($cm->getPhone());
 
                         $customer = [
-                            'id'         => (int)$cm->getId(),
-                            'first_name' => $first,
-                            'last_name'  => $last,
-                            'email'      => $email,
+                            'name'    => $first,
+                            'surname' => $last,
+                            'phone'   => $phone,
+                            'email'   => $email,
                         ];
                     }
                 }
             } catch (Exception $e) { /* ignore customer fetch errors */
             }
-            $this->webhookNotify($value_id, $card_number, $customer);
+            $this->webhookNotify($value_id, $card_number, $ean_encoding, $customer);
         } catch (Exception $e) { /* swallow webhook errors */
         }
 

@@ -277,19 +277,22 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
           <p class="alert alert-info" ><?php echo p__('Aerosalloyalty', 'When a card is linked (via manual entry, scan, or virtual creation), the module sends a POST request to the configured Webhook URL.'); ?></p>
           <p class="alert alert-success"><b><?php echo p__('Aerosalloyalty', 'Method'); ?>:</b> POST</p>
           <p class="alert alert-info"><b><?php echo p__('Aerosalloyalty', 'Content-Type'); ?>:</b> application/json</p>
-          <p class="alert alert-danger"><b><?php echo p__('Aerosalloyalty', 'Event'); ?>:</b> <code>card_linked</code></p>
+          <p class="alert alert-danger"><b><?php echo p__('Aerosalloyalty', 'Event'); ?>:</b> <code>CardActivated</code></p>
           <p><b><?php echo p__('Aerosalloyalty', 'Payload'); ?>:</b></p>
           <pre style="white-space: pre-wrap; word-break: break-word; background:#f7f7f9; padding:12px; border-radius:6px;">
                     `{
-                      "value_id": 123,
-                      "card_number": "4006381333931",
-                      "customer": {
-                        "id": 456,
-                        "first_name": "John",
-                        "last_name": "Doe",
-                        "email": "john@example.com"
+                      "event": "CardActivated",
+                      "timestamp": "2024-01-01T12:34:56+00:00",
+                      "card": {
+                        "card_number": "4006381333931",
+                        "ean_encoding": "EAN13"
                       },
-                      "event": "card_linked"
+                      "user": {
+                        "name": "John",
+                        "surname": "Doe",
+                        "phone": "+33 1 23 45 67 89",
+                        "email": "john@example.com"
+                      }
                     }`
           </pre>
           <p class="alert alert-warning"><b><?php echo p__('Aerosalloyalty', 'Notes'); ?>:</b></p>
