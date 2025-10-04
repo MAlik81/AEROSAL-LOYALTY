@@ -161,6 +161,7 @@
         <button
           class="button button-positive button-block"
           ng-click="openCampaigns()"
+          ng-if="enable_check_benefits"
           style="background-color: #6ba8ff; font-weight: bold"
         >
           {{ :: 'Check your points and benefits' | translate:'aerosalloyalty' }}
@@ -177,7 +178,7 @@
     </div>
 
     <!-- ===================== CAMPAIGNS ===================== -->
-    <div ng-if="state==='campaigns'">
+    <div ng-if="enable_check_benefits && state==='campaigns'">
       <h3 style="color: #2c3e50; font-weight: 600; margin-bottom: 15px">
         {{ :: 'Le tue raccolte e promozioni attive' | translate:'aerosalloyalty'
         }}
