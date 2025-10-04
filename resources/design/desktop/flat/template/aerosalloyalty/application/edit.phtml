@@ -110,6 +110,16 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
                 <small class="form-text text-muted">
                   <?php echo p__("Aerosalloyalty", "Called on create/scan/enter with card & customer data."); ?>
                 </small>
+                <div class="mt-2">
+                  <small class="form-text text-muted d-block mb-1">
+                    <?php echo p__('Aerosalloyalty', 'Available placeholders:'); ?>
+                  </small>
+                  <span class="placeholder-chip">{card_number}</span>
+                  <span class="placeholder-chip">{user.name}</span>
+                  <span class="placeholder-chip">{user.email}</span>
+                  <span class="placeholder-chip">{user.phone}</span>
+                </div>
+                <div class="text-danger small mt-2" id="webhook_validation_message" style="display:none;"></div>
               </div>
             </div>
 
@@ -351,6 +361,23 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
   .mb-3 {
     margin-bottom: 15px;
   }
+
+  .placeholder-chip {
+    display: inline-block;
+    background: #f5f7fa;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 2px 10px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #374151;
+  }
+
+  .input-flat.is-invalid,
+  .form-control.is-invalid {
+    border-color: #dc3545;
+  }
 </style>
 <!-- SweetAlert2 CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -396,6 +423,7 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
     // DataTable instance for Campaign Types
     var dt_object = null;
     var api_token = '';
+    var webhookRequiredMessage = '<?php echo addslashes(p__('Aerosalloyalty', 'Webhook URL is required when "points & benefits" are enabled.')); ?>';
 
     function ensureTypesDataTable() {
       if (!$.fn.DataTable) return; // DataTables not loaded; skip
@@ -435,6 +463,35 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
       alert(res && (res.message || (res.success ? 'OK' : 'Error')));
     }
 
+    function settingsRequireWebhook() {
+      return $('#enable_check_benefits').is(':checked');
+    }
+
+    function hasWebhookUrl() {
+      return $.trim($('#webhook_url').val() || '') !== '';
+    }
+
+    function updateWebhookValidationState() {
+      var requires = settingsRequireWebhook();
+      var hasUrl = hasWebhookUrl();
+      var isValid = !requires || hasUrl;
+      var $field = $('#webhook_url');
+      var $message = $('#webhook_validation_message');
+
+      if (!isValid && requires) {
+        $field.addClass('is-invalid');
+        $message.text(webhookRequiredMessage).show();
+      } else {
+        $field.removeClass('is-invalid');
+        $message.hide();
+      }
+
+      return isValid;
+    }
+
+    $('#enable_check_benefits').on('change', updateWebhookValidationState);
+    $('#webhook_url').on('input blur', updateWebhookValidationState);
+
     // ---------- INIT ----------
     function init() {
       $.ajax({
@@ -454,6 +511,7 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
           $('#default_ean_encoding').val(s.default_ean_encoding || 'EAN13');
           $('#enable_check_benefits').prop('checked', !!(+(s.enable_check_benefits || 0)));
           $('#webhook_url').val(s.webhook_url || '');
+          updateWebhookValidationState();
           renderTypes((res && res.types) || []);
           renderCampaigns((res && res.campaigns) || []);
           ensureTypesDataTable();
@@ -466,47 +524,69 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
 
     // ---------- SETTINGS SAVE ----------
   $('#btn_save_settings').on('click', function() {
+    if (!updateWebhookValidationState()) {
+      Swal.fire({
+        icon: 'error',
+        title: '<?php echo p__("Aerosalloyalty", "Error"); ?>',
+        text: webhookRequiredMessage,
+        confirmButtonColor: '#d33'
+      });
+      return;
+    }
+
     var data = {
-        value_id: value_id,
-        app_id: app_id,
-        default_ean_encoding: $('#default_ean_encoding').val() || 'EAN13',
-        enable_check_benefits: $('#enable_check_benefits').is(':checked') ? 1 : 0,
-        webhook_url: $('#webhook_url').val() || ''
+      value_id: value_id,
+      app_id: app_id,
+      default_ean_encoding: $('#default_ean_encoding').val() || 'EAN13',
+      enable_check_benefits: $('#enable_check_benefits').is(':checked') ? 1 : 0,
+      webhook_url: $.trim($('#webhook_url').val() || '')
     };
 
     $.ajax({
-        type: 'POST',
-        url: base + 'aerosalloyalty/application/save-settings',
-        data: data,
-        dataType: 'json'
+      type: 'POST',
+      url: base + 'aerosalloyalty/application/save-settings',
+      data: data,
+      dataType: 'json'
     })
     .done(function(res) {
-        if (res && res.success) {
-            Swal.fire({
-                icon: 'success',
-                title: '<?php echo p__("Aerosalloyalty", "Settings Saved"); ?>',
-                text: res.message || '<?php echo p__("Aerosalloyalty", "Your settings have been saved successfully."); ?>',
-                confirmButtonColor: '#3085d6'
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: '<?php echo p__("Aerosalloyalty", "Error"); ?>',
-                text: res.message || '<?php echo p__("Aerosalloyalty", "Unable to save settings."); ?>',
-                confirmButtonColor: '#d33'
-            });
-        }
+      if (res && res.success) {
+        Swal.fire({
+          icon: 'success',
+          title: '<?php echo p__("Aerosalloyalty", "Settings Saved"); ?>',
+          text: res.message || '<?php echo p__("Aerosalloyalty", "Your settings have been saved successfully."); ?>',
+          confirmButtonColor: '#3085d6'
+        });
+      } else {
+        var errorMessage = (res && res.message) ? res.message : '<?php echo p__("Aerosalloyalty", "Unable to save settings."); ?>';
+        Swal.fire({
+          icon: 'error',
+          title: '<?php echo p__("Aerosalloyalty", "Error"); ?>',
+          text: errorMessage,
+          confirmButtonColor: '#d33'
+        });
+      }
     })
     .fail(function(err) {
-        console.log(err);
-        Swal.fire({
-            icon: 'error',
-            title: '<?php echo p__("Aerosalloyalty", "Request Failed"); ?>',
-            text: '<?php echo p__("Aerosalloyalty", "Something went wrong while saving settings."); ?>',
-            confirmButtonColor: '#d33'
-        });
+      console.log(err);
+      var message = '<?php echo p__("Aerosalloyalty", "Something went wrong while saving settings."); ?>';
+      if (err && err.responseJSON && err.responseJSON.message) {
+        message = err.responseJSON.message;
+      } else if (err && err.responseText) {
+        try {
+          var parsed = JSON.parse(err.responseText);
+          if (parsed && parsed.message) message = parsed.message;
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      Swal.fire({
+        icon: 'error',
+        title: '<?php echo p__("Aerosalloyalty", "Request Failed"); ?>',
+        text: message,
+        confirmButtonColor: '#d33'
+      });
     });
-});
+  });
 
     // ---------- TYPES: RENDER ----------
     function renderTypes(list) {

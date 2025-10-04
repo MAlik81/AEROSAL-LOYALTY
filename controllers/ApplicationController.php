@@ -113,6 +113,10 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
                 'webhook_url'           => strlen(trim($p['webhook_url'] ?? '')) ? trim($p['webhook_url']) : null,
             ];
 
+            if ($data['enable_check_benefits'] && empty($data['webhook_url'])) {
+                throw new Exception(p__('Aerosalloyalty', 'Webhook URL is required when "points & benefits" are enabled.'));
+            }
+
             (new Aerosalloyalty_Model_Settings())->upsert($data);
             return $this->_sendJson(['success' => 1, 'message' => p__('Aerosalloyalty', 'Settings saved')]);
         } catch (Exception $e) {
