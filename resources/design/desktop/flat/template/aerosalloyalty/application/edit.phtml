@@ -257,6 +257,7 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
                 <th><?php echo p__("Aerosalloyalty", "Name"); ?></th>
                 <th><?php echo p__("Aerosalloyalty", "Points"); ?></th>
                 <th><?php echo p__("Aerosalloyalty", "Prizes"); ?></th>
+                <th><?php echo p__("Aerosalloyalty", "Logs"); ?></th>
                 <th><?php echo p__("Aerosalloyalty", "Action"); ?></th>
               </tr>
             </thead>
@@ -686,6 +687,32 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
         $('<td/>').text(c.name || '').appendTo($tr);
         $('<td/>').text(parseInt(c.points_balance || 0, 10)).appendTo($tr);
         $('<td/>').text(c.prizes || '').appendTo($tr);
+
+        var logs = c.webhook_logs || {};
+        var summary = c.webhook_log_summary || '';
+        var latest = logs.latest || null;
+        var tooltipParts = [];
+        if (logs.inbound) {
+          tooltipParts.push((logs.inbound.direction || 'inbound') + ' ' + (logs.inbound.http_status !== null ? logs.inbound.http_status : 'N/A') + ' @ ' + (logs.inbound.created_at || '')); 
+        }
+        if (logs.outbound) {
+          tooltipParts.push((logs.outbound.direction || 'outbound') + ' ' + (logs.outbound.http_status !== null ? logs.outbound.http_status : 'N/A') + ' @ ' + (logs.outbound.created_at || ''));
+        }
+        if (!tooltipParts.length && latest) {
+          tooltipParts.push((latest.direction || '') + ' ' + (latest.http_status !== null ? latest.http_status : 'N/A') + ' @ ' + (latest.created_at || ''));
+        }
+        var tooltip = tooltipParts.join(' \u2192 ');
+
+        var $logCell = $('<td/>');
+        if (summary) {
+          $('<span/>').text(summary).appendTo($logCell);
+        } else {
+          $('<span/>').text('<?php echo p__("Aerosalloyalty", "No logs yet"); ?>').appendTo($logCell);
+        }
+        if (tooltip) {
+          $logCell.attr('title', tooltip);
+        }
+        $logCell.appendTo($tr);
 
         var $actions = $('<td/>');
         var $del = $('<button type="button" class="btn btn-danger btn-xs"><i class="icon-trash"></i> <?php echo p__("", "Delete"); ?></button>');
