@@ -7,6 +7,64 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
         $this->loadPartials();
     }
 
+    /**
+     * Prepare campaign payload ensuring optional columns are present.
+     *
+     * @param mixed $rows
+     * @return array
+     */
+    protected function _formatCampaignRows($rows)
+    {
+        if ($rows instanceof Traversable) {
+            $rows = iterator_to_array($rows, false);
+        } elseif (!is_array($rows)) {
+            $rows = [];
+        }
+
+        return array_map(function ($row) {
+            if ($row instanceof Core_Model_Default) {
+                $data = $row->getData();
+            } elseif ($row instanceof Zend_Db_Table_Row_Abstract) {
+                $data = $row->toArray();
+            } elseif (is_array($row)) {
+                $data = $row;
+            } else {
+                $data = [];
+            }
+
+            if (!array_key_exists('last_operation', $data)) {
+                $data['last_operation'] = null;
+            }
+
+            if (!array_key_exists('last_operation_at', $data)) {
+                $data['last_operation_at'] = null;
+            }
+
+            return $data;
+        }, $rows);
+    }
+
+    /**
+     * Retrieve campaigns ordered by name.
+     *
+     * @param int $value_id
+     * @param string|null $card_number
+     * @return Zend_Db_Table_Rowset_Abstract
+     */
+    protected function _fetchCampaignRows($value_id, $card_number = null)
+    {
+        $db = new Aerosalloyalty_Model_Db_Table_Campaign();
+        $sel = $db->select()->from($db->info('name'))
+            ->where('value_id = ?', (int)$value_id)
+            ->order('name ASC');
+
+        if ($card_number !== null) {
+            $sel->where('card_number LIKE ?', $card_number . '%');
+        }
+
+        return $db->fetchAll($sel);
+    }
+
     /** INIT: returns all data needed by the editor (settings + types); campaigns optional */
     public function initAction()
     {
@@ -15,8 +73,7 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
             if (!$value_id) throw new Exception('Missing value_id');
             $settings = (new Aerosalloyalty_Model_Settings())->findAll(['value_id' => $value_id])->toArray();
             $types    = (new Aerosalloyalty_Model_CampaignType())->findAll(['value_id' => $value_id])->toArray();
-            $Campaign = new Aerosalloyalty_Model_Campaign();
-            $campaigns = $Campaign->findAll(['value_id' => $value_id])->toArray();
+            $campaigns = $this->_formatCampaignRows($this->_fetchCampaignRows($value_id));
             return $this->_sendJson([
                 'success' => 1,
                 'settings' => $settings ? $settings[0] : [],
@@ -169,21 +226,14 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
 
             $card_number = trim($this->getRequest()->getParam('card_number', ''));
 
-            $db = new Aerosalloyalty_Model_Db_Table_Campaign();
-            $sel = $db->select()->from($db->info('name'))
-                ->where('value_id = ?', $value_id)
-                ->order('name ASC');
-
-            if ($card_number !== '') {
-                $sel->where('card_number LIKE ?', $card_number . '%');
-            }
-
-            $rows = $db->fetchAll($sel);
             return $this->_sendJson([
                 'success' => 1,
-                'campaigns' => array_map(function ($c) {
-                    return $c->getData();
-                }, $rows)
+                'campaigns' => $this->_formatCampaignRows(
+                    $this->_fetchCampaignRows(
+                        $value_id,
+                        $card_number !== '' ? $card_number : null
+                    )
+                )
             ]);
         } catch (Exception $e) {
             return $this->_sendJson(['error' => 1, 'message' => $e->getMessage()]);
