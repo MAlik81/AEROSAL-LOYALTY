@@ -11,6 +11,7 @@ angular.module("starter").controller(
     $scope.state = "loading";
     $scope.card = null;
     $scope.campaigns = [];
+    $scope.enable_check_benefits = true;
 
     $scope.value_id = $stateParams.value_id || null;
     $scope.is_logged_in = Customer.isLoggedIn();
@@ -52,6 +53,19 @@ angular.module("starter").controller(
 
     // Load campaigns/benefits for the current card
     $scope.openCampaigns = function () {
+      if (!$scope.enable_check_benefits) {
+        $ionicPopup
+          .alert({
+            title: 'Unavailable',
+            template: 'Checking points and benefits is currently disabled.',
+            okText: 'OK',
+            okType: 'button-balanced'
+          })
+          .then(function () {
+            $scope.state = $scope.card ? 'card' : 'setup';
+          });
+        return;
+      }
       if (!$scope.value_id || !$scope.customer_id) return alertMsg("Missing identifiers");
       loading(true);
       Aerosalloyalty.campaigns($scope.value_id, $scope.customer_id)
@@ -275,6 +289,19 @@ angular.module("starter").controller(
           if (d.error) throw d.message;
           if (d.settings && d.settings.default_ean_encoding)
             $scope.manual.ean_encoding = d.settings.default_ean_encoding;
+
+          if (d.settings && typeof d.settings.enable_check_benefits !== 'undefined') {
+            var enableFlag = d.settings.enable_check_benefits;
+            if (typeof enableFlag === 'string') {
+              var lowered = enableFlag.toLowerCase();
+              if (lowered === 'false' || lowered === '0') {
+                enableFlag = false;
+              } else if (lowered === 'true' || lowered === '1') {
+                enableFlag = true;
+              }
+            }
+            $scope.enable_check_benefits = !!enableFlag;
+          }
 
           if (d.card) {
             $scope.card = d.card;
