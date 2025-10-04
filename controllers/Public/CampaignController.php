@@ -67,6 +67,55 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
         }
     }
 
+    protected function resolvePrizesToRedeem(array $body, $default = null)
+    {
+        $params = $this->getRequest()->getParams();
+        $sources = [
+            ['params', 'prizes_to_redeem'],
+            ['body', 'prizes_to_redeem'],
+            ['params', 'prizes'],
+            ['body', 'prizes'],
+        ];
+
+        foreach ($sources as [$type, $key]) {
+            if ($type === 'params') {
+                if (!array_key_exists($key, $params)) {
+                    continue;
+                }
+                $value = $params[$key];
+            } else {
+                if (!array_key_exists($key, $body)) {
+                    continue;
+                }
+                $value = $body[$key];
+            }
+
+            if ($value === null) {
+                return null;
+            }
+
+            if (!is_scalar($value)) {
+                return null;
+            }
+
+            $value = trim((string)$value);
+            return $value !== '' ? $value : null;
+        }
+
+        if ($default === null) {
+            return null;
+        }
+
+        if (!is_scalar($default)) {
+            return null;
+        }
+
+        $default = (string)$default;
+        $default = trim($default);
+
+        return $default !== '' ? $default : null;
+    }
+
     public function postAction()
     {
         $valueId = null;
@@ -111,8 +160,7 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
             $points = $this->getRequest()->getParam('points_balance', $body['points_balance'] ?? 0);
             $points = (int)$points;
 
-            $prizes = $this->getRequest()->getParam('prizes', $body['prizes'] ?? null);
-            $prizes = $prizes !== null ? (string)$prizes : null;
+            $prizesToRedeem = $this->resolvePrizesToRedeem($body);
 
             $this->safeLog($valueId, 'inbound', null, [
                 'method' => 'POST',
@@ -122,7 +170,7 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
                     'campaign_type_code' =>$typeCode,
                     'name'               =>$name,
                     'points_balance'     =>$points,
-                    'prizes'             =>$prizes,
+                    'prizes_to_redeem'   =>$prizesToRedeem,
                 ],
             ]);
 
@@ -135,7 +183,7 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
                 'campaign_type_code' => $typeCode,
                 'name'               => $name,
                 'points_balance'     => $points,
-                'prizes'             => $prizes,
+                'prizes_to_redeem'   => $prizesToRedeem,
             ]);
 
             $response = [
@@ -147,7 +195,7 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
                     'campaign_type_code' => $campaign->getCampaignTypeCode(),
                     'name'               => $campaign->getName(),
                     'points_balance'     => (int)$campaign->getPointsBalance(),
-                    'prizes'             => $campaign->getPrizes(),
+                    'prizes_to_redeem'   => $campaign->getPrizesToRedeem(),
                 ],
             ];
 
@@ -225,8 +273,7 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
             $points = $this->getRequest()->getParam('points_balance', $body['points_balance'] ?? $campaign->getPointsBalance());
             $points = (int)$points;
 
-            $prizes = $this->getRequest()->getParam('prizes', array_key_exists('prizes', $body) ? $body['prizes'] : $campaign->getPrizes());
-            $prizes = $prizes !== null ? (string)$prizes : null;
+            $prizesToRedeem = $this->resolvePrizesToRedeem($body, $campaign->getPrizesToRedeem());
 
             $this->safeLog($valueId, 'inbound', null, [
                 'method' => 'PUT',
@@ -237,7 +284,7 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
                     'campaign_type_code' => $typeCode,
                     'name'               => $name,
                     'points_balance'     => $points,
-                    'prizes'             => $prizes,
+                    'prizes_to_redeem'   => $prizesToRedeem,
                 ],
             ]);
 
@@ -248,7 +295,7 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
                 'campaign_type_code' => $typeCode,
                 'name'               => $name,
                 'points_balance'     => $points,
-                'prizes'             => $prizes,
+                'prizes_to_redeem'   => $prizesToRedeem,
             ]);
 
             $response = [
@@ -260,7 +307,7 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
                     'campaign_type_code' => $campaign->getCampaignTypeCode(),
                     'name'               => $campaign->getName(),
                     'points_balance'     => (int)$campaign->getPointsBalance(),
-                    'prizes'             => $campaign->getPrizes(),
+                    'prizes_to_redeem'   => $campaign->getPrizesToRedeem(),
                 ],
             ];
 

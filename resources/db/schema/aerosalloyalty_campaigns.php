@@ -29,7 +29,7 @@ $schemas['aerosalloyalty_campaigns'] = [
         'type' => 'int(11)',
         'default' => '0'
     ],
-    'prizes' => [
+    'prizes_to_redeem' => [
         'type' => 'varchar(255)',
         'is_null' => true,
         'default' => null

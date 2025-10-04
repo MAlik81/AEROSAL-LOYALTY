@@ -321,12 +321,12 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
           <ul>
             <li>
               <code>https://module.zeltacode.com/aerosalloyalty/public_campaign/post?app_id={APP_ID}&card_number={CARD_NUMBER}</code><br>
-              <?php echo p__('Aerosalloyalty', 'Body (JSON): {"campaign_type_code":"promo","name":"Back to School","points_balance":120,"prizes":"T-shirt"}'); ?><br>
+              <?php echo p__('Aerosalloyalty', 'Body (JSON): {"campaign_type_code":"promo","name":"Back to School","points_balance":120,"prizes_to_redeem":"T-shirt"}'); ?><br>
               <?php echo p__('Aerosalloyalty', 'Response: 201 Created with the persisted campaign (server assigns campaign_uid).'); ?>
             </li>
             <li class="mt-3">
               <code>https://module.zeltacode.com/aerosalloyalty/public_campaign/put/{UID}?app_id={APP_ID}&card_number={CARD_NUMBER}</code><br>
-              <?php echo p__('Aerosalloyalty', 'Body (JSON): provide any updatable fields (campaign_type_code, name, points_balance, prizes).'); ?><br>
+              <?php echo p__('Aerosalloyalty', 'Body (JSON): provide any updatable fields (campaign_type_code, name, points_balance, prizes_to_redeem).'); ?><br>
               <?php echo p__('Aerosalloyalty', 'Response: 200 OK with the refreshed campaign payload.'); ?>
             </li>
             <li class="mt-3">
@@ -769,7 +769,13 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
         $('<td/>').text(c.campaign_type_code || '').appendTo($tr);
         $('<td/>').text(c.name || '').appendTo($tr);
         $('<td/>').text(parseInt(c.points_balance || 0, 10)).appendTo($tr);
-        $('<td/>').text(c.prizes || '').appendTo($tr);
+        var prizes = '';
+        if (c.prizes_to_redeem !== undefined && c.prizes_to_redeem !== null) {
+          prizes = c.prizes_to_redeem;
+        } else if (c.prizes !== undefined && c.prizes !== null) {
+          prizes = c.prizes;
+        }
+        $('<td/>').text(prizes || '').appendTo($tr);
 
         var logs = c.webhook_logs || {};
         var summary = c.webhook_log_summary || '';

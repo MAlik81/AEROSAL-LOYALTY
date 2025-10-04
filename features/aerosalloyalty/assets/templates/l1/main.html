@@ -219,9 +219,9 @@
             <b>{{ :: 'Nome Campagna:' | translate:'aerosalloyalty' }}</b> {{
             c.name }}
           </div>
-          <div class="item item-text-wrap" ng-if="c.prizes">
+          <div class="item item-text-wrap" ng-if="c.prizes_to_redeem || c.prizes">
             <b>{{ :: 'Premi da ritirare:' | translate:'aerosalloyalty' }}</b> {{
-            c.prizes }}
+            c.prizes_to_redeem || c.prizes }}
           </div>
         </div>
       </div>
