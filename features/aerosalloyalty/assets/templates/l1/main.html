@@ -196,8 +196,20 @@
           "
         >
           <div class="item item-text-wrap">
-            <b>{{ :: 'Tipo Campagna:' | translate:'aerosalloyalty' }}</b> {{
-            c.campaign_type_name || c.campaign_type_code }}
+            <div
+              style="display: flex; align-items: center; gap: 10px; min-height: 24px"
+            >
+              <img
+                ng-if="c.campaign_type_icon"
+                ng-src="{{c.campaign_type_icon}}"
+                alt=""
+                style="width: 24px; height: 24px; object-fit: contain"
+              />
+              <div>
+                <b>{{ :: 'Tipo Campagna:' | translate:'aerosalloyalty' }}</b>
+                {{ c.campaign_type_name || c.campaign_type_code }}
+              </div>
+            </div>
           </div>
           <div class="item item-text-wrap" ng-if="c.points_balance != null">
             <b>{{ :: 'Saldo Punti:' | translate:'aerosalloyalty' }}</b> {{
