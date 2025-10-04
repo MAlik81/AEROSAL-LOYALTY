@@ -94,6 +94,7 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
             $settings = (new Aerosalloyalty_Model_Settings())->findAll(['value_id' => $value_id])->toArray();
             $types    = (new Aerosalloyalty_Model_CampaignType())->findAll(['value_id' => $value_id])->toArray();
             $campaigns = $this->_formatCampaignRows($this->_fetchCampaignRows($value_id));
+            $campaigns = $this->_attachCampaignTypeMetadata($value_id, $campaigns);
             $campaigns = $this->_attachLatestWebhookLogs($value_id, $campaigns);
             return $this->_sendJson([
                 'success' => 1,
@@ -265,6 +266,7 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
                     $card_number !== '' ? $card_number : null
                 )
             );
+            $campaigns = $this->_attachCampaignTypeMetadata($value_id, $campaigns);
             $campaigns = $this->_attachLatestWebhookLogs($value_id, $campaigns);
 
             return $this->_sendJson([
@@ -274,6 +276,54 @@ class Aerosalloyalty_ApplicationController extends Application_Controller_Defaul
         } catch (Exception $e) {
             return $this->_sendJson(['error' => 1, 'message' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Attach campaign type metadata (friendly name, icon) to campaign payload.
+     *
+     * @param int   $valueId
+     * @param array $campaigns
+     * @return array
+     */
+    protected function _attachCampaignTypeMetadata($valueId, array $campaigns)
+    {
+        if (empty($campaigns)) {
+            return $campaigns;
+        }
+
+        $types = (new Aerosalloyalty_Model_CampaignType())->allForValue($valueId);
+        $map = [];
+
+        if ($types) {
+            foreach ($types as $type) {
+                $code = (string)$type->getCode();
+                if ($code === '') {
+                    continue;
+                }
+
+                $map[$code] = [
+                    'name' => $type->getName(),
+                    'icon' => $type->getIcon(),
+                ];
+            }
+        }
+
+        foreach ($campaigns as &$campaign) {
+            $code = isset($campaign['campaign_type_code']) ? (string)$campaign['campaign_type_code'] : '';
+
+            if ($code !== '' && isset($map[$code])) {
+                $name = $map[$code]['name'];
+                $icon = $map[$code]['icon'];
+                $campaign['campaign_type_name'] = $name !== '' ? $name : $code;
+                $campaign['campaign_type_icon'] = $icon !== '' ? $icon : null;
+            } else {
+                $campaign['campaign_type_name'] = $code;
+                $campaign['campaign_type_icon'] = null;
+            }
+        }
+        unset($campaign);
+
+        return $campaigns;
     }
 
     /**

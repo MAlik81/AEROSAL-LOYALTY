@@ -264,7 +264,7 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
               <tr class="border-grey">
                 <th><?php echo p__("Aerosalloyalty", "Card Number"); ?></th>
                 <th><?php echo p__("Aerosalloyalty", "Campaign UID"); ?></th>
-                <th><?php echo p__("Aerosalloyalty", "Type Code"); ?></th>
+                <th><?php echo p__("Aerosalloyalty", "Campaign Type"); ?></th>
                 <th><?php echo p__("Aerosalloyalty", "Name"); ?></th>
                 <th><?php echo p__("Aerosalloyalty", "Points"); ?></th>
                 <th><?php echo p__("Aerosalloyalty", "Prizes"); ?></th>
@@ -378,6 +378,18 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
   .input-flat.is-invalid,
   .form-control.is-invalid {
     border-color: #dc3545;
+  }
+
+  .campaign-type-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .campaign-type-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
   }
 </style>
 <!-- SweetAlert2 CSS -->
@@ -882,7 +894,25 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
         var $tr = $('<tr/>');
         $('<td/>').text(c.card_number || '').appendTo($tr);
         $('<td/>').text(c.campaign_uid || '').appendTo($tr);
-        $('<td/>').text(c.campaign_type_code || '').appendTo($tr);
+        var typeCode = c.campaign_type_code !== undefined && c.campaign_type_code !== null ? String(c.campaign_type_code) : '';
+        var typeName = c.campaign_type_name;
+        if (typeName === undefined || typeName === null || typeName === '') {
+          typeName = typeCode;
+        }
+        typeName = typeName !== undefined && typeName !== null ? String(typeName) : '';
+        var $typeCell = $('<td/>').addClass('campaign-type-cell');
+        if (c.campaign_type_icon) {
+          $('<img/>')
+            .addClass('campaign-type-icon')
+            .attr('src', c.campaign_type_icon)
+            .attr('alt', typeName || typeCode)
+            .appendTo($typeCell);
+        }
+        $('<span/>').text(typeName).appendTo($typeCell);
+        if (typeCode && typeName && typeName !== typeCode) {
+          $typeCell.attr('title', typeCode);
+        }
+        $typeCell.appendTo($tr);
         $('<td/>').text(c.name || '').appendTo($tr);
         $('<td/>').text(parseInt(c.points_balance || 0, 10)).appendTo($tr);
         var prizes = '';
