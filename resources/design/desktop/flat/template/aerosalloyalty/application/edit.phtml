@@ -322,12 +322,12 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
           <ul>
             <li>
               <code>https://module.zeltacode.com/aerosalloyalty/public_campaign/post?app_id={APP_ID}&card_number={CARD_NUMBER}</code><br>
-              <?php echo p__('Aerosalloyalty', 'Body (JSON): {"campaign_type_code":"promo","name":"Back to School","points_balance":120,"prizes_to_redeem":"T-shirt"}'); ?><br>
+              <?php echo p__('Aerosalloyalty', 'Body (JSON): {"campaign_type_code":"promo","name":"Back to School","points_balance":120,"prizes_to_redeem":"T-shirt"} (use type_code as an alias if preferred).'); ?><br>
               <?php echo p__('Aerosalloyalty', 'Response: 201 Created with the persisted campaign (server assigns campaign_uid).'); ?>
             </li>
             <li class="mt-3">
               <code>https://module.zeltacode.com/aerosalloyalty/public_campaign/put/{UID}?app_id={APP_ID}&card_number={CARD_NUMBER}</code><br>
-              <?php echo p__('Aerosalloyalty', 'Body (JSON): provide any updatable fields (campaign_type_code, name, points_balance, prizes_to_redeem).'); ?><br>
+              <?php echo p__('Aerosalloyalty', 'Body (JSON): provide any updatable fields (campaign_type_code/type_code, name, points_balance, prizes_to_redeem).'); ?><br>
               <?php echo p__('Aerosalloyalty', 'Response: 200 OK with the refreshed campaign payload.'); ?>
             </li>
             <li class="mt-3">
@@ -340,7 +340,7 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
             <li><?php echo p__('Aerosalloyalty', 'Authorization header must be present: Authorization: Bearer &lt;API_TOKEN&gt;.'); ?></li>
             <li><?php echo p__('Aerosalloyalty', 'app_id is required and is resolved through the feature settings.'); ?></li>
             <li><?php echo p__('Aerosalloyalty', 'card_number must reference an active card (soft-deleted cards are rejected).'); ?></li>
-            <li><?php echo p__('Aerosalloyalty', 'campaign_type_code must exist for the same feature.'); ?></li>
+            <li><?php echo p__('Aerosalloyalty', 'campaign_type_code or type_code must exist for the same feature.'); ?></li>
             <li><?php echo p__('Aerosalloyalty', 'All requests and responses are logged for auditing (Aerosalloyalty → Webhook logs).'); ?></li>
           </ul>
         </div>
