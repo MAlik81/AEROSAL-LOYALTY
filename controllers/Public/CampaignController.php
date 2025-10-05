@@ -288,12 +288,9 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
 
             $campaignModel = new Aerosalloyalty_Model_Campaign();
             $campaign      = $campaignModel->findByUid($valueId, $uid, $cardNumber);
-            if (!$campaign->getId()) {
-                $campaign = $campaignModel->findByUid($valueId, $uid);
-            }
 
             if (!$campaign->getId()) {
-                throw new Exception('Campaign not found', 404);
+                throw new Exception('Campaign not found for provided uid and card_number', 404);
             }
 
             $cardNumber = $cardNumber ?: $campaign->getCardNumber();
@@ -399,12 +396,9 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
 
             $campaignModel = new Aerosalloyalty_Model_Campaign();
             $campaign      = $campaignModel->findByUid($valueId, $uid, $cardNumber);
-            if (!$campaign->getId()) {
-                $campaign = $campaignModel->findByUid($valueId, $uid);
-            }
 
             if (!$campaign->getId()) {
-                throw new Exception('Campaign not found', 404);
+                throw new Exception('Campaign not found for provided uid and card_number', 404);
             }
 
             $cardNumber = $campaign->getCardNumber();

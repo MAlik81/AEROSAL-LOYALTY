@@ -340,6 +340,7 @@ if (substr($base_url, -1) !== '/') $base_url .= '/';
             <li><?php echo p__('Aerosalloyalty', 'Authorization header must be present: Authorization: Bearer &lt;API_TOKEN&gt;.'); ?></li>
             <li><?php echo p__('Aerosalloyalty', 'app_id is required and is resolved through the feature settings.'); ?></li>
             <li><?php echo p__('Aerosalloyalty', 'card_number must reference an active card (soft-deleted cards are rejected).'); ?></li>
+            <li><?php echo p__('Aerosalloyalty', 'For updates and deletes, the provided uid and card_number must both match the stored campaign.'); ?></li>
             <li><?php echo p__('Aerosalloyalty', 'campaign_type_code or type_code must exist for the same feature.'); ?></li>
             <li><?php echo p__('Aerosalloyalty', 'All requests and responses are logged for auditing (Aerosalloyalty → Webhook logs).'); ?></li>
           </ul>
