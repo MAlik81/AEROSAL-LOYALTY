@@ -116,6 +116,56 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
         return $default !== '' ? $default : null;
     }
 
+    protected function resolveCampaignTypeCode(array $body, $default = null)
+    {
+        $params = $this->getRequest()->getParams();
+        $sources = [
+            ['params', 'campaign_type_code'],
+            ['params', 'type_code'],
+            ['body', 'campaign_type_code'],
+            ['body', 'type_code'],
+        ];
+
+        foreach ($sources as [$type, $key]) {
+            if ($type === 'params') {
+                if (!array_key_exists($key, $params)) {
+                    continue;
+                }
+                $value = $params[$key];
+            } else {
+                if (!array_key_exists($key, $body)) {
+                    continue;
+                }
+                $value = $body[$key];
+            }
+
+            if ($value === null) {
+                continue;
+            }
+
+            if (!is_scalar($value)) {
+                continue;
+            }
+
+            $value = trim((string)$value);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        if ($default === null) {
+            return null;
+        }
+
+        if (!is_scalar($default)) {
+            return null;
+        }
+
+        $default = trim((string)$default);
+
+        return $default !== '' ? $default : null;
+    }
+
     public function postAction()
     {
         $valueId = null;
@@ -142,9 +192,9 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
                 throw new Exception('Card not found for provided value_id', 404);
             }
 
-            $typeCode = trim((string)($this->getRequest()->getParam('campaign_type_code', $body['campaign_type_code'] ?? '')));
-            if ($typeCode === '') {
-                throw new Exception('Missing campaign_type_code', 400);
+            $typeCode = $this->resolveCampaignTypeCode($body);
+            if ($typeCode === null) {
+                throw new Exception('Missing campaign_type_code or type_code', 400);
             }
 
             $type = (new Aerosalloyalty_Model_CampaignType())->findByCode($valueId, $typeCode);
@@ -253,10 +303,9 @@ class Aerosalloyalty_Public_CampaignController extends Application_Controller_De
                 throw new Exception('Card not found for provided value_id', 404);
             }
 
-            $typeCode = $this->getRequest()->getParam('campaign_type_code', $body['campaign_type_code'] ?? $campaign->getCampaignTypeCode());
-            $typeCode = trim((string)$typeCode);
-            if ($typeCode === '') {
-                throw new Exception('Missing campaign_type_code', 400);
+            $typeCode = $this->resolveCampaignTypeCode($body, $campaign->getCampaignTypeCode());
+            if ($typeCode === null) {
+                throw new Exception('Missing campaign_type_code or type_code', 400);
             }
 
             $type = (new Aerosalloyalty_Model_CampaignType())->findByCode($valueId, $typeCode);
